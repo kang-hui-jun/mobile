@@ -1,0 +1,22 @@
+export type User = {
+    businessUnitName: string;
+    isAccountingVersion: boolean;
+    enableCallCenter: boolean;
+    roleId: string;
+    loginToken: string;
+    serviceurl: string;
+    imgBucketDomain: string;
+    userName: string;
+    userId: string;
+    systemVersion: string;
+    businessUnitId: string;
+    mobilePhone: string;
+    versionSystem: string;
+    myAvatarUrl: string;
+    appid: string;
+    isPropagandaFormSet: boolean;
+    oName: string;
+    isOpenConferenceCenter: boolean;
+    email: string;
+    fileBucketDomain: string;
+};

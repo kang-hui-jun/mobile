@@ -17,6 +17,7 @@
     "@react-navigation/native": "^7.1.8",
     "@tamagui/config": "^1.142.0",
     "@tamagui/core": "^1.142.0",
+    "@tamagui/lucide-icons": "^1.142.0",
     "@tanstack/react-query": "^5.90.12",
     "expo": "~54.0.30",
     "expo-constants": "~18.0.12",

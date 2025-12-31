@@ -36,3 +36,18 @@ export const useAdvQueryZn = (params?: object, data?: object) => {
     getNextPageParam: (lastPage) => lastPage?.nextPage,
   });
 };
+
+export const useInitEntityMainData = (params: {
+  id: string;
+  entity: string;
+  fieldName: string;
+  actionType: string;
+}) => {
+  const client = useHttp();
+  return useQuery({
+    queryKey: ["initEntityMainData"],
+    queryFn: async () => {
+      return client("/gw/entity/initEntityMainData", { params });
+    },
+  });
+};

@@ -41,7 +41,7 @@ export default function HomeScreen() {
     //   renderItem={({ item }) => (
     <View style={{ padding: 20, borderBottomWidth: 1, borderColor: "#eee" }}>
       <Button width={"100%"} onPress={()=>{
-        router.push("/modal")
+        router.navigate("/modal")
       }}>click</Button>
     </View>
     //   )}

@@ -1,10 +1,11 @@
 import { ThemedView } from "@/components/themed-view";
 import { useMobileLayoutV2 } from "@/service/universal";
 import { useAuth } from "@/store";
-import { getCurrentDate, handleLayout } from "@/utils";
+import { handleLayout, LayoutData, shouldMapReferenceField } from "@/utils";
 import { useEffect } from "react";
 import { ScrollView, StyleSheet } from "react-native";
 
+import { userNameField } from "@/constants/mobile";
 import { useHttp } from "@/utils/http";
 import { Check as CheckIcon, Plus } from "@tamagui/lucide-icons";
 import {
@@ -19,159 +20,103 @@ import {
 } from "tamagui";
 
 export default function ModalScreen() {
-  const { mobileLayout, setMobileLayout } = useAuth();
   const client = useHttp();
-  const { data, isLoading } = useMobileLayoutV2({
+  const { mobileLayout, setMobileLayout, user } = useAuth();
+  const params = {
     entity: "SalesOrder",
     id: "",
     multipleLayoutId: "143-b71b29f5-76f0-4bdc-8b69-846e94f35586",
-  });
+  };
+
+  const { data, isLoading } = useMobileLayoutV2(params);
 
   useEffect(() => {
     if (data?.data) {
-      // 1. 先进行通用的布局转换
-      const baseLayout = handleLayout(data.data);
+      const baseLayout: LayoutData = handleLayout(data.data);
 
-      // 2. 紧接着进行特定的字段逻辑处理（比如 owningUser 的赋值）
-      const initializedLayout = {
-        ...baseLayout,
-        areas: baseLayout.areas.map((area) => ({
-          ...area,
-          rows: area.rows.map((cell) => {
-            if (cell.name === "owningUser") {
-              // 返回新对象，保持不可变性
-              return { ...cell, value: "123" };
-            }
-            if (cell.type === "picklist") {
-              return {
-                ...cell,
-                value: baseLayout.pickList
-                  .find((pick) => pick.fieldName === cell.name)
-                  ?.options.find((opt) => opt.isDefault === "Y")?.lable,
-              };
-            }
-            if (cell.type === "datetime") {
-              return {
-                ...cell,
-                value: getCurrentDate(),
-              };
-            }
-            return cell;
-          }),
-        })),
-      };
-
-      const initAsyncData = async () => {
-        const newLayout = JSON.parse(JSON.stringify(initializedLayout));
-
-        for (const item of newLayout.areas) {
-          for (const cell of item.rows) {
-            if (cell.type === "reference" && cell.defaultValue) {
-              try {
-                const entityFieldMappingManager = await client(
-                  "/gw/entity/GetEntityFieldMappingManager",
-                  {
+      const initAsyncData = async (layoutData: LayoutData) => {
+        const tasks: Promise<void>[] = [];
+        for (const area of layoutData.areas) {
+          for (const row of area.rows) {
+            if (shouldMapReferenceField(row)) {
+              if (row.name === userNameField) {
+                row.defaultValue = user?.userId;
+              }
+              const task = (async () => {
+                const [mainData, mapping, cascade] = await Promise.all([
+                  // 映射主表
+                  client("/gw/entity/initEntityMainData", {
                     params: {
-                      id: cell.defaultValue,
-                      entity: cell.entity || "",
-                      fieldName: cell.name,
+                      id: row.defaultValue,
+                      entity: row.entity,
+                      fieldName: row.name,
                       actionType: "create",
                     },
-                  }
-                );
+                  }),
 
-                for (const item of entityFieldMappingManager.data) {
-                  if (item.details) {
-                    for (const detail of item.details) {
-                      cell.value = detail[cell.name].value;
-                    }
-                  }
-                }
-
-                const entityCasade = await client(
-                  "/gw/entity/GetEntityCascade",
-                  {
+                  client("/gw/entity/GetEntityFieldMappingManager", {
                     params: {
-                      id: cell.defaultValue,
-                      entity: cell.entity,
-                      fieldName: cell.name,
+                      id: row.defaultValue,
+                      entity: row.entity,
+                      fieldName: row.name,
+                      actionType: "create",
                     },
-                  }
-                );
+                  }),
 
-                cell.referenceFilterCondition = entityCasade[cell.name].value;
+                  client("/gw/entity/GetEntityCascade", {
+                    params: {
+                      id: row.defaultValue,
+                      entity: row.entity,
+                      fieldName: row.name,
+                    },
+                  }),
+                ]);
 
-                const response = await client("/gw/entity/initEntityMainData", {
-                  params: {
-                    id: cell.defaultValue,
-                    entity: cell.entity || "",
-                    fieldName: cell.name,
-                    actionType: "create",
-                  },
-                });
-                let searching = Object.values(response.data.data);
-                const searchingLoop = (searching: any[]) => {
-                  let arr: {
-                    destName: string;
-                    destValue: string;
-                    destLabel: string;
-                  }[] = [];
-                  if (!searching.length) return;
-                  for (const item of searching) {
-                    if (item.cascade && Array.isArray(item.cascade)) {
-                      for (const item1 of item.cascade) {
-                        if (item1.result && item1.result[0]) {
-                          arr.push({
-                            destName: item1.mainField,
-                            destLabel: item1.result[0].name,
-                            destValue: item1.result[0].id,
-                          });
-                        }
-                      }
+                row.value = mainData.data.data[row.name]?.value;
 
-                      item.cascade.forEach((item1: any) => {
-                        if (item1.result && item1.result[0]) {
-                          arr.push({
-                            destName: item1.mainField,
-                            destLabel: item1.result[0].name,
-                            destValue: item1.result[0].id,
-                          });
-                        }
-                      });
+                if (mainData.data.hasDetailEntity) {
+                  const detailData = await client(
+                    "/gw/entity/initEntityDetailData",
+                    {
+                      params: {
+                        id: row.defaultValue,
+                        entity: row.entity,
+                        fieldName: row.name,
+                        actionType: "create",
+                      },
                     }
+                  );
 
-                    if (
-                      item.cascade.cascade &&
-                      Array.isArray(item.cascade.cascade)
-                    ) {
-                      arr.concat(searchingLoop(item?.cascade?.cascade) || []);
-                    }
-                  }
-                  return arr;
-                };
-
-                let cascade: Array<{
-                  destName: string;
-                  destValue: string;
-                  destLabel: string;
-                }> = searchingLoop(searching) || [];
-
-                searching = searching.concat(cascade);
-
-                if (response?.data) {
+                  console.log(detailData.data);
                 }
-              } catch (error) {
-                console.error("加载默认值失败:", error);
-              }
+
+                try {
+
+                } catch (error) {
+                  console.error(error);
+                }
+              })();
+
+              tasks.push(task);
             }
           }
         }
-        // 全部请求完成后，一次性更新状态
-        setMobileLayout(newLayout);
+
+        await Promise.all(tasks);
+
+        setMobileLayout(layoutData);
       };
 
-      setMobileLayout(initializedLayout);
-      initAsyncData();
+      const runAsyncUpdates = async () => {
+        try {
+          await initAsyncData(baseLayout);
+        } catch (err) {
+          console.error("异步数据加载失败", err);
+          setMobileLayout(baseLayout);
+        }
+      };
+      setMobileLayout(baseLayout);
+      runAsyncUpdates();
     }
   }, [data]); // 仅监听 API 返回的数据
 
@@ -220,7 +165,7 @@ export default function ModalScreen() {
 
                   {key.type === "reference" && (
                     <XStack gap="$2" key={key.label} p="$2">
-                      <Button icon={Plus}>{item.title}</Button>
+                      <Button icon={Plus}>{key.value}</Button>
                     </XStack>
                   )}
                 </XStack>

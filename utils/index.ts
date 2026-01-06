@@ -1,7 +1,8 @@
-import { userNameField } from "@/constants/mobile";
+import { componentType, userNameField } from "@/constants/mobile";
 import { useMobileLayoutV2 } from "@/service/universal";
+import { useAuth } from "@/store";
 import { Area, Cell, MobileLayout, Row } from "@/types/mobile-layout";
-import { useEffect } from "react";
+import { useHttp } from "./http";
 
 const mapRow = (area: Area) => ({
   ...area,
@@ -20,8 +21,6 @@ export const handleLayout = (data: MobileLayout) => {
     },
     listAreas: data.listAreas.map(mapRow),
   };
-  console.log(result, "处理后");
-
   return result;
 };
 
@@ -84,11 +83,19 @@ export const useInitEntityCascade = (params: Quote, layoutData: LayoutData) => {
   if (!params.value.id) return layoutData;
 };
 
-// 写一个函数，返回当前日期，比如：2025-12-31
 export const getCurrentDate = (): string => {
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+};
+
+// 判断是否有值并且类型是reference或者是用户字段名
+
+export const shouldMapReferenceField = (cell: Cell) => {
+  return (
+    (cell.defaultValue && cell.type === componentType.reference) ||
+    cell.name === userNameField
+  );
 };

@@ -21,7 +21,7 @@ const AuthContext = createContext<
       login: (form: AuthForm) => Promise<void>;
       logout: () => Promise<void>;
       mobileLayout: LayoutData | null;
-      setMobileLayout: (mobileLayout: LayoutData) => void;
+      setMobileLayout: (mobileLayout: LayoutData | null) => void;
     }
   | undefined
 >(undefined);

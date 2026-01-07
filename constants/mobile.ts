@@ -2958,9 +2958,6 @@ export const mobileLayout = {
   ],
 };
 
-// 用户字段
-export const userNameField = "owningUser";
-
 // 引用类型
 export const componentType = {
   reference: "reference",

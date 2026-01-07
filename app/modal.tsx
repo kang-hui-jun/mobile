@@ -2,10 +2,10 @@ import { ThemedView } from "@/components/themed-view";
 import { useMobileLayoutV2 } from "@/service/universal";
 import { useAuth } from "@/store";
 import { handleLayout, LayoutData, shouldMapReferenceField } from "@/utils";
-import { useEffect } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { useEffect, useRef } from "react";
+import { Pressable, ScrollView, StyleSheet } from "react-native";
 
-import { userNameField } from "@/constants/mobile";
+import { userNameField } from "@/constants";
 import { useHttp } from "@/utils/http";
 import { Check as CheckIcon, Plus } from "@tamagui/lucide-icons";
 import {
@@ -18,14 +18,23 @@ import {
   XStack,
   YStack,
 } from "tamagui";
+import { Stack, useLocalSearchParams } from "expo-router";
+import { Cell } from "@/types/mobile-layout";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 
 export default function ModalScreen() {
+  const scrollViewRef = useRef<ScrollView>(null);
+  const { entity, multipleLayoutId, entityName } = useLocalSearchParams();
   const client = useHttp();
   const { mobileLayout, setMobileLayout, user } = useAuth();
   const params = {
-    entity: "SalesOrder",
+    entity,
     id: "",
-    multipleLayoutId: "143-b71b29f5-76f0-4bdc-8b69-846e94f35586",
+    multipleLayoutId,
+  } as {
+    entity: string;
+    id: string;
+    multipleLayoutId: string;
   };
 
   const { data, isLoading } = useMobileLayoutV2(params);
@@ -91,7 +100,6 @@ export default function ModalScreen() {
                 }
 
                 try {
-
                 } catch (error) {
                   console.error(error);
                 }
@@ -118,13 +126,55 @@ export default function ModalScreen() {
       setMobileLayout(baseLayout);
       runAsyncUpdates();
     }
-  }, [data]); // 仅监听 API 返回的数据
+  }, [data]);
+
+  const handleAdd = () => {
+    if (mobileLayout) {
+      setMobileLayout({
+        ...mobileLayout,
+        hasDetail: {
+          ...mobileLayout.hasDetail,
+          detailInfoAreas: [
+            ...mobileLayout.hasDetail.detailInfoAreas,
+            mobileLayout.hasDetail.detailInfoAreas[0],
+          ],
+        },
+      });
+
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 500);
+    }
+  };
 
   if (isLoading) return <Spinner size="small" color="$green10" />;
 
+  const Row = ({ row }: { row: Cell }) => {
+    return (
+      <XStack gap="$2" key={row.label} p="$2">
+        <Label width={80} htmlFor="name" size={"$3"}>
+          {row.label}
+        </Label>
+        <Input
+          flex={1}
+          id="name"
+          placeholder="请输入"
+          size="$3"
+          defaultValue={row.value}
+        />
+      </XStack>
+    );
+  };
+
   return (
     <ThemedView style={styles.container}>
-      <ScrollView>
+      <Stack.Screen
+        options={{
+          title: ("新建" + entityName) as string,
+          headerShown: true, // 确保显示
+        }}
+      />
+      <ScrollView ref={scrollViewRef}>
         <YStack gap="$2" p="$2">
           {mobileLayout?.areas?.map((item) => (
             <Card
@@ -141,35 +191,39 @@ export default function ModalScreen() {
               </XStack>
 
               {item.rows.map((key) => (
-                <XStack gap="$2" key={key.label} p="$2">
-                  <Label width={80} htmlFor="name" size={"$3"}>
-                    {key.label}
-                  </Label>
-                  {key.type === "text" && (
-                    <Input
-                      flex={1}
-                      id="name"
-                      placeholder="请输入"
-                      size="$3"
-                      defaultValue={key.value}
-                    />
-                  )}
-
-                  {key.type === "checkbox" && (
-                    <Checkbox size={"$3"}>
-                      <Checkbox.Indicator>
-                        <CheckIcon />
-                      </Checkbox.Indicator>
-                    </Checkbox>
-                  )}
-
-                  {key.type === "reference" && (
-                    <XStack gap="$2" key={key.label} p="$2">
-                      <Button icon={Plus}>{key.value}</Button>
-                    </XStack>
-                  )}
-                </XStack>
+                <Row row={key} />
               ))}
+            </Card>
+          ))}
+
+          {mobileLayout?.hasDetail?.detailInfoAreas?.map((item, index) => (
+            <Card
+              key={item.id + index}
+              elevate
+              size="$4"
+              bordered
+              background={"#ffffff"}
+            >
+              <XStack p="$2">
+                <Label size="$5" fontWeight={600}>
+                  {item.title}
+                </Label>
+              </XStack>
+
+              {item.rows.map((key) => (
+                <Row row={key} />
+              ))}
+
+              <XStack p={"$2"}>
+                <Button
+                  size={"$3"}
+                  width={"100%"}
+                  icon={Plus}
+                  onPress={handleAdd}
+                >
+                  新建一项
+                </Button>
+              </XStack>
             </Card>
           ))}
         </YStack>

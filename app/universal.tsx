@@ -1,38 +1,44 @@
 import { DraggableFAB } from "@/components/DraggableFAB";
+import { HorizontalTabs } from "@/components/HorizontalTabs";
 import { InfiniteList } from "@/components/InfiniteList";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useAdvQueryZn } from "@/service/universal";
+import { useAdvQueryZn, useGridFilter } from "@/service/universal";
+import { Filter } from "@/types/grid-filter";
 import { Plus } from "@tamagui/lucide-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { Card, View } from "tamagui";
+import { useEffect, useMemo, useState } from "react";
+import { Card, Spinner, View } from "tamagui";
 
 export default function UniversalScreen() {
   const router = useRouter();
+  const [activeId, setActiveId] = useState("");
   const { entity, entityName } = useLocalSearchParams();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useState({
     isDeleted: 0,
     entity,
     fields:
-      "c__NOM,accountId,orderType,c__lianxiren,orderName,total,paid,unpaid,owningUser,owningBusinessUnit",
+      "accountId,c__lianxiren,orderName,orderDate,total,c__ceshiduoxuanyonghu",
   });
-  const [searchData, setSearchData] = useState({
-    times: 1766468339486,
-    type: "AND",
-    filters: [
-      {
-        fieldName: "owningHighSea",
-        type: "reference",
-        operator: "=",
-        value: "$NULL$",
-        filterType: "AND",
-      },
-    ],
-    children: [],
-  });
+  const [searchData, setSearchData] = useState<Filter>();
+
+  const { data, isLoading } = useGridFilter({ entity } as any);
+
+  useEffect(() => {
+    if (data) {
+      const defaultItem = data.find((item) => item.isDefault);
+      setSearchData(defaultItem.filter);
+      setActiveId(defaultItem.filterId);
+    }
+  }, [data]);
+
+  const handleTabChange = (id: string) => {
+    setActiveId(id);
+    const item = data?.find((item) => item.filterId === id);
+    setSearchData(item?.filter);
+  };
 
   const {
     data: list,
@@ -40,7 +46,9 @@ export default function UniversalScreen() {
     hasNextPage,
     isFetchingNextPage,
     isRefetching,
-  } = useAdvQueryZn(searchParams, searchData);
+  } = useAdvQueryZn(searchParams, searchData, {
+    enabled: !!searchData,
+  });
 
   const listData = useMemo(() => {
     return list?.pages.flatMap((page) => page.list) || [];
@@ -52,7 +60,7 @@ export default function UniversalScreen() {
       params: {
         entity,
         multipleLayoutId: "143-b71b29f5-76f0-4bdc-8b69-846e94f35586",
-        entityName
+        entityName,
       },
     });
   };
@@ -63,6 +71,8 @@ export default function UniversalScreen() {
     });
   };
 
+  if (isLoading) return <Spinner size="small" color="$green10" />;
+
   return (
     <View flex={1}>
       <Stack.Screen
@@ -70,6 +80,13 @@ export default function UniversalScreen() {
           title: entityName as string,
           headerShown: true, // 确保显示
         }}
+      />
+      <HorizontalTabs
+        data={data || []}
+        activeId={activeId}
+        onTabChange={handleTabChange}
+        idField="filterId"
+        labelField="filterName"
       />
       <DraggableFAB
         onPress={() => console.log("新增任务")}

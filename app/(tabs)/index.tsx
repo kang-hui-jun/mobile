@@ -1,50 +1,35 @@
-import { InfiniteList } from "@/components/InfiniteList";
-import { useAdvQueryZn } from "@/service/universal";
-import { useRouter } from "expo-router";
-import { Text, View } from "react-native";
-import { Button } from "tamagui";
+import { HorizontalTabs } from "@/components/HorizontalTabs";
+import { ThemedView } from "@/components/themed-view";
+import { useGridFilter } from "@/service/universal";
+import { useEffect, useState } from "react";
+import { Spinner } from "tamagui";
 
 export default function HomeScreen() {
-  const router = useRouter();
-  const { data } = useAdvQueryZn(
-    {
-      page_no: 1,
-      isDeleted: 0,
-      entity: "Account",
-      fields:
-        "createdOn,c__NO,owningUser,c__xingming,accountName,c__shouji,c__hesuanzhuti,c__qichuyingshoujine,c__xiaoshoujine,c__xiaoshouhuikuan,c__yingshouzhangkuan,c__yushouzhangkuan,c__xiaoshouchengben,c__xiaoshoumaoli,c__zuijinxiaoshouriqi,c__qitayingfuyue,c__shijiyingshoukuan,c__hesuanzhuti.c__zhutimingcheng,lastSalesOrderDate,c__gongsileixing,email,c__fuwufuzebumen,c__qichuweikaipiao,applyStatus,typeCode,c__fuwufuzeren,lastContactedOn,c__jingyingzhuangtai,kfAge,kfNotes,postalCode",
-    },
-    {
-      times: 1766468339486,
-      type: "AND",
-      filters: [
-        {
-          fieldName: "owningHighSea",
-          type: "reference",
-          operator: "=",
-          value: "$NULL$",
-          filterType: "AND",
-        },
-      ],
-      children: [],
+  const { data, isLoading } = useGridFilter({ entity: "SalesOrder" });
+  const [activeId, setActiveId] = useState("");
+
+  useEffect(() => {
+    if (data) {
+      const defaultItem = data.find((item) => item.isDefault);
+      setActiveId(defaultItem.filterId);
     }
-  );
+  }, [data]);
+
+  const handleTabChange = (id: string) => {
+    setActiveId(id);
+  };
+
+  if (isLoading) return <Spinner size="small" color="$green10" />;
 
   return (
-    // <InfiniteList
-    //   data={listData}
-    //   isRefreshing={isRefetching}
-    //   isLoading={isFetchingNextPage}
-    //   hasMore={!!hasNextPage}
-    //   onRefresh={refetch}
-    //   onLoadMore={fetchNextPage}
-    //   renderItem={({ item }) => (
-    <View style={{ padding: 20, borderBottomWidth: 1, borderColor: "#eee" }}>
-      <Button width={"100%"} onPress={()=>{
-        router.navigate("/modal")
-      }}>click</Button>
-    </View>
-    //   )}
-    // />
+    <ThemedView>
+      <HorizontalTabs
+        data={data || []}
+        activeId={activeId}
+        onTabChange={handleTabChange}
+        idField="filterId"
+        labelField="filterName"
+      />
+    </ThemedView>
   );
 }

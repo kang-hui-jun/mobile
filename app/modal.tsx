@@ -1,32 +1,22 @@
 import { ThemedView } from "@/components/themed-view";
+import { FormItem } from "@/components/ui/FormItem";
+import { userNameField } from "@/constants";
 import { useMobileLayoutV2 } from "@/service/universal";
 import { useAuth } from "@/store";
 import { handleLayout, LayoutData, shouldMapReferenceField } from "@/utils";
-import { useEffect, useRef } from "react";
-import { Pressable, ScrollView, StyleSheet } from "react-native";
-
-import { userNameField } from "@/constants";
 import { useHttp } from "@/utils/http";
-import { Check as CheckIcon, Plus } from "@tamagui/lucide-icons";
-import {
-  Button,
-  Card,
-  Checkbox,
-  Input,
-  Label,
-  Spinner,
-  XStack,
-  YStack,
-} from "tamagui";
+import { Plus } from "@tamagui/lucide-icons";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { Cell } from "@/types/mobile-layout";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useEffect, useRef } from "react";
+import { ScrollView, StyleSheet } from "react-native";
+import { Button, Card, Label, Spinner, XStack, YStack } from "tamagui";
 
 export default function ModalScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const { entity, multipleLayoutId, entityName } = useLocalSearchParams();
   const client = useHttp();
-  const { mobileLayout, setMobileLayout, user } = useAuth();
+  const { mobileLayout, setMobileLayout, user, formData, setFormData } =
+    useAuth();
   const params = {
     entity,
     id: "",
@@ -42,7 +32,25 @@ export default function ModalScreen() {
   useEffect(() => {
     if (data?.data) {
       const baseLayout: LayoutData = handleLayout(data.data);
+      console.log([...new Set(baseLayout.areas.flatMap((k) => k.rows).map((k) => k.type))]);
 
+      const dataForm: Record<string, unknown> = {};
+      for (const area of baseLayout.areas) {
+        for (const row of area.rows) {
+          if (row.type === "picklist") {
+            const pick = baseLayout.pickList.find(
+              (key) => key.fieldName === row.name
+            );
+            const defaultValue = pick?.options?.find(
+              (opt) => opt.isDefault === "Y"
+            )?.lable;
+            dataForm[row.name] = defaultValue || "";
+          } else {
+            dataForm[row.name] = row.defaultValue || "";
+          }
+        }
+      }
+      setFormData(dataForm);
       const initAsyncData = async (layoutData: LayoutData) => {
         const tasks: Promise<void>[] = [];
         for (const area of layoutData.areas) {
@@ -143,28 +151,15 @@ export default function ModalScreen() {
 
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 500);
+      }, 300);
     }
   };
 
-  if (isLoading) return <Spinner size="small" color="$green10" />;
-
-  const Row = ({ row }: { row: Cell }) => {
-    return (
-      <XStack gap="$2" key={row.label} p="$2">
-        <Label width={80} htmlFor="name" size={"$3"}>
-          {row.label}
-        </Label>
-        <Input
-          flex={1}
-          id="name"
-          placeholder="请输入"
-          size="$3"
-          defaultValue={row.value}
-        />
-      </XStack>
-    );
+  const handleSubmit = () => {
+    console.log(formData);
   };
+
+  if (isLoading) return <Spinner size="small" color="$green10" />;
 
   return (
     <ThemedView style={styles.container}>
@@ -191,46 +186,45 @@ export default function ModalScreen() {
               </XStack>
 
               {item.rows.map((key) => (
-                <Row row={key} />
+                <FormItem key={key.name} row={key} />
               ))}
             </Card>
           ))}
 
-          {mobileLayout?.hasDetail?.detailInfoAreas?.map((item, index) => (
-            <Card
-              key={item.id + index}
-              elevate
-              size="$4"
-              bordered
-              background={"#ffffff"}
-            >
-              <XStack p="$2">
-                <Label size="$5" fontWeight={600}>
-                  {item.title}
-                </Label>
-              </XStack>
+          <Card elevate size="$4" bordered background={"#ffffff"}>
+            {mobileLayout?.hasDetail?.detailInfoAreas?.map((item, index) => (
+              <Card key={item.id + index} background={"#ffffff"}>
+                <XStack p="$2">
+                  <Label size="$5" fontWeight={600}>
+                    明细{index}
+                  </Label>
+                </XStack>
 
-              {item.rows.map((key) => (
-                <Row row={key} />
-              ))}
+                {item.rows.map((key) => (
+                  <FormItem key={key.name} row={key} />
+                ))}
+              </Card>
+            ))}
 
-              <XStack p={"$2"}>
-                <Button
-                  size={"$3"}
-                  width={"100%"}
-                  icon={Plus}
-                  onPress={handleAdd}
-                >
-                  新建一项
-                </Button>
-              </XStack>
-            </Card>
-          ))}
+            <XStack p={"$2"}>
+              <Button
+                size={"$3"}
+                width={"100%"}
+                bg={"#FFFFFF"}
+                icon={Plus}
+                onPress={handleAdd}
+              >
+                新建一项
+              </Button>
+            </XStack>
+          </Card>
         </YStack>
       </ScrollView>
 
       <XStack p={"$2"}>
-        <Button width={"100%"}>click</Button>
+        <Button width={"100%"} onPress={handleSubmit}>
+          click
+        </Button>
       </XStack>
     </ThemedView>
   );

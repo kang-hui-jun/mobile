@@ -1,3 +1,5 @@
+import { ComponentType } from "@/constants/mobile";
+
 export type MobileLayout = {
   hasDetail: HasDetail;
   isUseAuditFlow: boolean;
@@ -39,7 +41,7 @@ export type Cell = {
   // common
   name: string;
   label: string;
-  type: string;
+  type: ComponentType;
   entity?: string;
   to?: string;
   value?: string;

@@ -1,3 +1,4 @@
+import { Filter, GridFilter } from "@/types/grid-filter";
 import { useHttp } from "@/utils/http";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
@@ -15,10 +16,15 @@ export const useMobileLayoutV2 = (params: {
   });
 };
 
-export const useAdvQueryZn = (params?: object, data?: object) => {
+export const useAdvQueryZn = (
+  params?: object,
+  data?: object,
+  options?: { enabled?: boolean }
+) => {
   const client = useHttp();
   return useInfiniteQuery({
     queryKey: ["advQueryZn", params, data],
+    enabled: options?.enabled,
     initialPageParam: 1,
     queryFn: async ({ pageParam = 1 }) => {
       const response = await client("/gw/entity/adv-queryZn", {
@@ -74,6 +80,36 @@ export const useInitEntityMainData = (params: {
     queryKey: ["initEntityMainData"],
     queryFn: async () => {
       return client("/gw/entity/initEntityMainData", { params });
+    },
+  });
+};
+
+export const useGridFilter = (params: { entity: string }) => {
+  const client = useHttp();
+  return useQuery({
+    queryKey: ["gridFilter"],
+    queryFn: async () => {
+      const response = await client("/gw/apiGrid/gridfilter", { params });
+      const isDefault = response.data?.some((key: GridFilter) => key.isDefault);
+      const filter = {
+        type: "AND",
+        filters: [],
+        children: [],
+      };
+      const all = {
+        filterName: "全部",
+        filterId: "",
+        isDefault: !isDefault,
+        filter,
+      };
+
+      for (const item of response.data) {
+        if (!item.filter) {
+          item.filter = filter;
+        }
+      }
+
+      return [all, ...response.data];
     },
   });
 };

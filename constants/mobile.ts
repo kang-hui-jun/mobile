@@ -2958,7 +2958,20 @@ export const mobileLayout = {
   ],
 };
 
-// 引用类型
-export const componentType = {
-  reference: "reference",
-};
+// 组件类型
+export const componentType = [
+  "reference",
+  "autonumber",
+  "text",
+  "phone",
+  "picklist",
+  "datetime",
+  "money",
+  "attachment",
+  "textarea",
+  "picture",
+  "multi",
+  "referencelist",
+] as const;
+
+export type ComponentType = (typeof componentType)[number];

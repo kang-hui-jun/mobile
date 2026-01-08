@@ -60,7 +60,7 @@ export const DraggableFAB = ({
       <Animated.View style={[styles.fabContainer, animatedStyle]}>
         <Button
           circular
-          size="$6"
+          size="$4"
           elevate
           theme="orange"
           icon={icon}

@@ -22,6 +22,8 @@ const AuthContext = createContext<
       logout: () => Promise<void>;
       mobileLayout: LayoutData | null;
       setMobileLayout: (mobileLayout: LayoutData | null) => void;
+      formData: Record<string, unknown>;
+      setFormData: (formData: Record<string, unknown>) => void;
     }
   | undefined
 >(undefined);
@@ -30,6 +32,7 @@ AuthContext.displayName = "AuthContext";
 export const AppProviders = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [mobileLayout, setMobileLayout] = useState<LayoutData | null>(null);
+  const [formData, setFormData] = useState<Record<string, unknown>>({});
 
   const register = (form: AuthForm) => Promise.resolve(null).then(setUser);
   const login = (form: AuthForm) => auth.login(form).then(setUser);
@@ -42,7 +45,16 @@ export const AppProviders = ({ children }: { children: ReactNode }) => {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthContext.Provider
-        value={{ user, register, login, logout, mobileLayout, setMobileLayout }}
+        value={{
+          user,
+          register,
+          login,
+          logout,
+          mobileLayout,
+          setMobileLayout,
+          formData,
+          setFormData,
+        }}
         children={children}
       />
     </QueryClientProvider>

@@ -4,11 +4,9 @@ import { ThemedView } from "@/components/themed-view";
 import { useMenus } from "@/service/application";
 import { useAuth } from "@/store";
 import { Menu } from "@/types/menu";
-import { menuList, transformMenu } from "@/utils";
-import { Plus } from "@tamagui/lucide-icons";
+import { transformMenu } from "@/utils";
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
-import { FlatList, ScrollView } from "react-native";
+import { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
 import { Card, Text, Spinner, XStack, YStack } from "tamagui";
 
@@ -16,10 +14,11 @@ export default function ApplicationScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { isLoading, data, isRefetching } = useMenus();
+  const [menuList, setMenuList] = useState<Menu[]>([]);
 
   useEffect(() => {
     if (data) {
-      console.log(transformMenu(data.data, user));
+      setMenuList(transformMenu(data.data, user));
     }
   }, [data]);
 
@@ -37,7 +36,7 @@ export default function ApplicationScreen() {
 
   return (
     <InfiniteList
-      style={{ padding:4 }}
+      style={{ padding: 4 }}
       data={menuList}
       isRefreshing={isRefetching}
       isLoading={isLoading}
@@ -58,7 +57,7 @@ export default function ApplicationScreen() {
           </Card.Header>
 
           <XStack fw="wrap" p="$2">
-            {item.children.map((child) => (
+            {item?.children?.map((child) => (
               <YStack
                 w="25%"
                 ai="center"

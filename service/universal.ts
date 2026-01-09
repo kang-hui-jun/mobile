@@ -60,6 +60,7 @@ export const useGridColumnFields = (params: { entity: string }) => {
   const client = useHttp();
   return useQuery({
     queryKey: ["gridColumnFields"],
+    enabled: Boolean(params.entity),
     queryFn: async () => {
       const response = await client("/gw/apiGrid/gridColumnFields", {
         params: { ...params, type: "" },
@@ -87,7 +88,7 @@ export const useInitEntityMainData = (params: {
 export const useGridFilter = (params: { entity: string }) => {
   const client = useHttp();
   return useQuery({
-    queryKey: ["gridFilter"],
+    queryKey: ["gridFilter", params],
     queryFn: async () => {
       const response = await client("/gw/apiGrid/gridfilter", { params });
       const isDefault = response.data?.some((key: GridFilter) => key.isDefault);
@@ -111,5 +112,13 @@ export const useGridFilter = (params: { entity: string }) => {
 
       return [all, ...response.data];
     },
+  });
+};
+
+export const useGridColumnLayout = (params: { entity: string }) => {
+  const client = useHttp();
+  return useQuery({
+    queryKey: ["gridColumnLayout", params],
+    queryFn: () => client("/gw/Gadiipr / gridColumnLayout", { params }),
   });
 };

@@ -3,13 +3,17 @@ import { HorizontalTabs } from "@/components/HorizontalTabs";
 import { InfiniteList } from "@/components/InfiniteList";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useAdvQueryZn, useGridFilter } from "@/service/universal";
+import {
+  useAdvQueryZn,
+  useGridColumnFields,
+  useGridFilter,
+} from "@/service/universal";
 import { Filter } from "@/types/grid-filter";
 import { Plus } from "@tamagui/lucide-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Card, Spinner, View } from "tamagui";
+import { Card, Spinner, XStack } from "tamagui";
 
 export default function UniversalScreen() {
   const router = useRouter();
@@ -19,12 +23,15 @@ export default function UniversalScreen() {
   const [searchParams, setSearchParams] = useState({
     isDeleted: 0,
     entity,
-    fields:
-      "accountId,c__lianxiren,orderName,orderDate,total,c__ceshiduoxuanyonghu",
+    fields: "",
   });
   const [searchData, setSearchData] = useState<Filter>();
 
   const { data, isLoading } = useGridFilter({ entity } as any);
+
+  const { data: fields } = useGridColumnFields({ entity } as any);
+
+  const { data: gridColumnLayout } = useGridColumnFields({ entity } as any);
 
   useEffect(() => {
     if (data) {
@@ -33,6 +40,15 @@ export default function UniversalScreen() {
       setActiveId(defaultItem.filterId);
     }
   }, [data]);
+
+  useEffect(() => {
+    if (fields) {
+      setSearchParams({
+        ...searchParams,
+        fields: fields?.map((item) => item.fieldName).join(","),
+      });
+    }
+  }, [fields]);
 
   const handleTabChange = (id: string) => {
     setActiveId(id);
@@ -74,7 +90,7 @@ export default function UniversalScreen() {
   if (isLoading) return <Spinner size="small" color="$green10" />;
 
   return (
-    <View flex={1}>
+    <ThemedView style={{flex: 1, backgroundColor: "rgba(0, 0, 0, 0.00)"}}>
       <Stack.Screen
         options={{
           title: entityName as string,
@@ -117,12 +133,18 @@ export default function UniversalScreen() {
           >
             <Card.Header>
               <ThemedText style={{ fontWeight: "bold" }}>
-                {item.accountId}
+                {fields?.map((k) => (
+                  <ThemedText key={k.fieldName}>
+                    {k.fieldLabel}:{item[k.fieldName]}
+                  </ThemedText>
+                ))}
               </ThemedText>
             </Card.Header>
           </Card>
         )}
       />
-    </View>
+
+      <XStack h={50} bg={"#FFFFFF"} style={{height: 50}} alignItems="center" pl={10} pr={10}>总数{}</XStack>
+    </ThemedView>
   );
 }

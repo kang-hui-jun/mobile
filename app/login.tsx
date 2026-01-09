@@ -12,11 +12,11 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       await login({
-        mobilePhone: "18720240117",
+        mobilePhone: "18720250218",
         password: "123456",
         device: "iPhone",
         appvver: "no version",
-        organizationId: "000-423d05b2-06e2-4a2b-a6d6-f1b024ceaf7f",
+        organizationId: "000-0ef3acb9-229d-4be2-bb9c-b01ed0a1e4c2",
       });
       router.replace("/");
     } catch (error) {}

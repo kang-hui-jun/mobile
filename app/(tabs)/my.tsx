@@ -1,5 +1,5 @@
 import { ThemedView } from "@/components/themed-view";
 
-export default function HomeScreen() {
+export default function MyScreen() {
   return <ThemedView></ThemedView>;
 }

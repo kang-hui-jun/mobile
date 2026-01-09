@@ -2,7 +2,7 @@ import { useAuth } from "@/store";
 import { Cell } from "@/types/mobile-layout";
 import { ChevronDown } from "@tamagui/lucide-icons";
 import { Platform } from "react-native";
-import { Button, Input, Label, XStack } from "tamagui";
+import { Button, Input, Label, TextArea, XStack } from "tamagui";
 
 export const FormItem = ({ row }: { row: Cell }) => {
   const { formData, setFormData } = useAuth();
@@ -48,6 +48,131 @@ export const FormItem = ({ row }: { row: Cell }) => {
         ))}
 
       {["reference", "referencelist"].includes(row.type) && (
+        <Button
+          flex={1}
+          justifyContent="flex-end"
+          size={"$3"}
+          iconAfter={<ChevronDown size="$1" color="$colorPress" />}
+        >
+          {formData[row.name] || "请选择"}
+        </Button>
+      )}
+
+      {row.type === "location" && (
+        <Input
+          flex={1}
+          id="name"
+          placeholder="请输入"
+          textAlign="right"
+          size="$3"
+          // @ts-ignore
+          onChangeText={handleInput}
+          value={formData[row.name || ""] as any}
+          defaultValue={formData[row.value || ""] as any}
+        />
+      )}
+
+      {row.type === "queryAssignment" && (
+        <Input
+          flex={1}
+          id="name"
+          placeholder="请输入"
+          textAlign="right"
+          size="$3"
+          // @ts-ignore
+          onChangeText={handleInput}
+          value={formData[row.name || ""] as any}
+          defaultValue={formData[row.value || ""] as any}
+        />
+      )}
+
+      {row.type === "number" && (
+        <Input
+          flex={1}
+          id="name"
+          placeholder="请输入"
+          textAlign="right"
+          size="$3"
+          // @ts-ignore
+          onChangeText={handleInput}
+          value={formData[row.name || ""] as any}
+          defaultValue={formData[row.value || ""] as any}
+        />
+      )}
+
+      {row.type === "phone" && (
+        <Input
+          flex={1}
+          id="name"
+          placeholder="请输入"
+          textAlign="right"
+          size="$3"
+          // @ts-ignore
+          onChangeText={handleInput}
+          value={formData[row.name || ""] as any}
+          defaultValue={formData[row.value || ""] as any}
+        />
+      )}
+
+      {row.type === "textarea" && (
+        <TextArea
+          flex={1}
+          id="name"
+          placeholder="请输入"
+          textAlign="right"
+          size="$3"
+          // @ts-ignore
+          onChangeText={handleInput}
+          value={formData[row.name || ""] as any}
+          defaultValue={formData[row.value || ""] as any}
+        />
+      )}
+
+      {row.type === "picklist" && (
+        <Button
+          flex={1}
+          justifyContent="flex-end"
+          size={"$3"}
+          iconAfter={<ChevronDown size="$1" color="$colorPress" />}
+        >
+          {formData[row.name] || "请选择"}
+        </Button>
+      )}
+
+      {row.type === "multi" && (
+        <Button
+          flex={1}
+          justifyContent="flex-end"
+          size={"$3"}
+          iconAfter={<ChevronDown size="$1" color="$colorPress" />}
+        >
+          {formData[row.name] || "请选择"}
+        </Button>
+      )}
+
+      {["datetime", "date"].includes(row.type) && (
+        <Button
+          flex={1}
+          justifyContent="flex-end"
+          size={"$3"}
+          iconAfter={<ChevronDown size="$1" color="$colorPress" />}
+        >
+          {formData[row.name] || "请选择"}
+        </Button>
+      )}
+
+      {row.type === "area" && (
+        <Button
+          flex={1}
+          justifyContent="flex-end"
+          size={"$3"}
+          iconAfter={<ChevronDown size="$1" color="$colorPress" />}
+        >
+          {formData[row.name] || "请选择"}
+        </Button>
+      )}
+
+      {row.type === "docComponent" && (
         <Button
           flex={1}
           justifyContent="flex-end"

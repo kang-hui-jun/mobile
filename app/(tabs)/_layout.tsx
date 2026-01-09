@@ -30,7 +30,7 @@ export default function TabLayout() {
           tabBarLabel: "首页",
           headerTitle: "首页",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+            <IconSymbol size={24} name="house.fill" color={color} />
           ),
           // 自定义左侧按钮
           headerLeft: () => (
@@ -58,7 +58,27 @@ export default function TabLayout() {
           tabBarLabel: "application",
           headerTitle: "application",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="paperplane.fill" color={color} />
+            <IconSymbol size={24} name="paperplane.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="todo"
+        options={{
+          tabBarLabel: "代办",
+          headerShown: false,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="paperplane.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="my"
+        options={{
+          tabBarLabel: "我的",
+          headerTitle: "我的",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={24} name="paperplane.fill" color={color} />
           ),
         }}
       />

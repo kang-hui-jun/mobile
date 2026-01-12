@@ -32,7 +32,9 @@ export default function ModalScreen() {
   useEffect(() => {
     if (data?.data) {
       const baseLayout: LayoutData = handleLayout(data.data);
-      console.log([...new Set(baseLayout.areas.flatMap((k) => k.rows).map((k) => k.type))]);
+      console.log([
+        ...new Set(baseLayout.areas.flatMap((k) => k.rows).map((k) => k.type)),
+      ]);
 
       const dataForm: Record<string, unknown> = {};
       for (const area of baseLayout.areas) {
@@ -191,33 +193,35 @@ export default function ModalScreen() {
             </Card>
           ))}
 
-          <Card elevate size="$4" bordered background={"#ffffff"}>
-            {mobileLayout?.hasDetail?.detailInfoAreas?.map((item, index) => (
-              <Card key={item.id + index} background={"#ffffff"}>
-                <XStack p="$2">
-                  <Label size="$5" fontWeight={600}>
-                    明细{index}
-                  </Label>
-                </XStack>
+          {mobileLayout?.hasDetail?.detailEntityName && (
+            <Card elevate size="$4" bordered background={"#ffffff"}>
+              {mobileLayout?.hasDetail?.detailInfoAreas?.map((item, index) => (
+                <Card key={item.id + index} background={"#ffffff"}>
+                  <XStack p="$2">
+                    <Label size="$5" fontWeight={600}>
+                      明细{index}
+                    </Label>
+                  </XStack>
 
-                {item.rows.map((key) => (
-                  <FormItem key={key.name} row={key} />
-                ))}
-              </Card>
-            ))}
+                  {item.rows.map((key) => (
+                    <FormItem key={key.name} row={key} />
+                  ))}
+                </Card>
+              ))}
 
-            <XStack p={"$2"}>
-              <Button
-                size={"$3"}
-                width={"100%"}
-                bg={"#FFFFFF"}
-                icon={Plus}
-                onPress={handleAdd}
-              >
-                新建一项
-              </Button>
-            </XStack>
-          </Card>
+              <XStack p={"$2"}>
+                <Button
+                  size={"$3"}
+                  width={"100%"}
+                  bg={"#FFFFFF"}
+                  icon={Plus}
+                  onPress={handleAdd}
+                >
+                  新建一项
+                </Button>
+              </XStack>
+            </Card>
+          )}
         </YStack>
       </ScrollView>
 

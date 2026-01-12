@@ -76,7 +76,7 @@ export default function TabLayout() {
         name="my"
         options={{
           tabBarLabel: "我的",
-          headerTitle: "我的",
+          headerShown: false,
           tabBarIcon: ({ color }) => (
             <IconSymbol size={24} name="paperplane.fill" color={color} />
           ),

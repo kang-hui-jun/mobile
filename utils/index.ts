@@ -1,10 +1,7 @@
-import { componentType } from "@/constants/mobile";
+import { userNameField } from "@/constants";
 import { useMobileLayoutV2 } from "@/service/universal";
-import { useAuth } from "@/store";
-import { Area, Cell, MobileLayout, Row } from "@/types/mobile-layout";
-import { useHttp } from "./http";
 import { Menu } from "@/types/menu";
-import { ACCOUNT, userNameField } from "@/constants";
+import { Area, Cell, MobileLayout, Row } from "@/types/mobile-layout";
 import { User } from "@/types/user";
 
 const mapRow = (area: Area) => ({
@@ -18,11 +15,11 @@ export const handleLayout = (data: MobileLayout) => {
     ...data,
     areas: data.areas.map(mapRow),
     hasDetail: {
-      ...data.hasDetail,
-      detailInfoAreas: data.hasDetail.detailInfoAreas.map(mapRow),
-      detailLayout: data.hasDetail.detailLayout.map(mapRow),
+      ...data?.hasDetail,
+      detailInfoAreas: data?.hasDetail?.detailInfoAreas?.map(mapRow),
+      detailLayout: data?.hasDetail?.detailLayout?.map(mapRow),
     },
-    listAreas: data.listAreas.map(mapRow),
+    listAreas: data?.listAreas?.map(mapRow),
   };
   return result;
 };

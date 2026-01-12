@@ -31,3 +31,10 @@ export interface TodoMenu {
   foldChildren: boolean;
   isShow: boolean;
 }
+
+export type ToDoCenterMenus = {
+  isAdmin: boolean;
+  isNotTemplate: boolean;
+  templateName: string;
+  menus: TodoMenu[];
+};

@@ -20,7 +20,7 @@ export default function TodoScreen() {
   const [title, setTitle] = useState("");
   const [searchParams, setSearchParams] = useState({
     isDeleted: 0,
-    entity:"",
+    entity: "",
     fields: "",
   });
   const [searchData, setSearchData] = useState<Filter>();
@@ -44,38 +44,45 @@ export default function TodoScreen() {
   }, [list]);
 
   useEffect(() => {
-    if (menu) {
-      setActiveId(activeId || menu?.data?.menus[0].type);
-      setChildrenMenu(menu?.data?.menus[0].children);
-      setChildrenActiveId(menu?.data?.menus[0].children[0].name);
-    //   setEntity(menu?.data?.menus[0].children[0].entityName);
-      //   console.log(menu?.data?.menus[0].children[0].filter);
+    if (fields) {
+      setSearchParams({
+        ...searchParams,
+        fields: fields?.map((item) => item.fieldName).join(","),
+      });
+    }
+  }, [fields]);
 
-      //   setSearchData(JSON.parse(menu?.data?.menus[0].children[0].filter))
+  // 初始化
+  useEffect(() => {
+    if (menu) {
+      // 设置title
+      setTitle(menu?.menus?.[0].name);
+      // 一级菜单选中
+      setActiveId(activeId || menu?.menus[0]?.type);
+      // 二级菜单数据
+      const childrenMenu = menu?.menus[0].children;
+      setChildrenMenu(childrenMenu);
+      // 二级菜单选中
+      setChildrenActiveId(childrenMenu[0].name);
+      // 设置entityName
+      setEntity(childrenMenu[0].entityName);
+      // 请求参数
+      setSearchParams({
+        ...searchParams,
+        entity: childrenMenu[0].entityName,
+      });
     }
   }, [menu]);
 
   const handleTabChange = (id: string) => {
-    const title = menu?.data?.menus.find(
-      (menu: TodoMenu) => menu.type === id
-    )?.name;
-    setTitle(title);
+    const title = menu?.menus?.find((menu: TodoMenu) => menu.type === id)?.name;
+    setTitle(title || "");
     setActiveId(id);
-    setChildrenMenu(
-      menu?.data?.menus.find((menu: TodoMenu) => menu.type === id).children
-    );
-    setChildrenActiveId(
-      menu?.data?.menus.find((menu: TodoMenu) => menu.type === id).children[0]
-        .name
-    );
-    // setSearchData(
-    //   menu?.data?.menus.find((menu: TodoMenu) => menu.type === id).children[0]
-    //     .filter
-    // );
-    setEntity(
-      menu?.data?.menus.find((menu: TodoMenu) => menu.type === id).children[0]
-        .entityName
-    );
+    const findChildrenMenu =
+      menu?.menus?.find((menu: TodoMenu) => menu.type === id)?.children || [];
+    setChildrenMenu(findChildrenMenu);
+    setChildrenActiveId(findChildrenMenu?.[0]?.name || "");
+    setEntity(findChildrenMenu?.[0]?.entityName || "");
   };
 
   const handleChildrenTabChange = (id: string) => {
@@ -86,11 +93,10 @@ export default function TodoScreen() {
     setSearchParams({
       ...searchParams,
       entity: entityName,
-      fields: fields?.map((item) => item.fieldName).join(",")
+      fields: fields?.map((item) => item.fieldName)?.join(",") || "",
     });
     const data = childrenMenu?.find((k) => k.name === id)?.filter;
-    setSearchData(JSON.parse(data));
-
+    setSearchData(JSON.parse(data as any));
   };
 
   const handleRefresh = async () => {
@@ -106,11 +112,11 @@ export default function TodoScreen() {
       <Stack.Screen
         options={{
           title: title,
-          headerShown: true, // 确保显示
+          headerShown: true,
         }}
       />
       <HorizontalTabs
-        data={menu?.data?.menus || []}
+        data={menu?.menus || []}
         activeId={activeId}
         onTabChange={handleTabChange}
         idField="type"

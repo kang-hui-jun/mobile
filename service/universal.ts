@@ -1,3 +1,4 @@
+import { GridColumnFields } from "@/types/grid-column-fields";
 import { Filter, GridFilter } from "@/types/grid-filter";
 import { useHttp } from "@/utils/http";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -58,8 +59,8 @@ export const useAdvQueryZn = (
 
 export const useGridColumnFields = (params: { entity: string }) => {
   const client = useHttp();
-  return useQuery({
-    queryKey: ["gridColumnFields"],
+  return useQuery<GridColumnFields[]>({
+    queryKey: ["gridColumnFields", params],
     enabled: Boolean(params.entity),
     queryFn: async () => {
       const response = await client("/gw/apiGrid/gridColumnFields", {

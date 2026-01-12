@@ -18,3 +18,4 @@ export type GridFilter = {
   isDefault: boolean;
   filter: Filter;
 };
+

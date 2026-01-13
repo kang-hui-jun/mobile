@@ -7,6 +7,7 @@ import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/store";
 import { Pressable } from "react-native";
+import { CalendarCheck, UserRoundMinus } from "@tamagui/lucide-icons";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -55,10 +56,10 @@ export default function TabLayout() {
       <Tabs.Screen
         name="application"
         options={{
-          tabBarLabel: "application",
-          headerTitle: "application",
+          tabBarLabel: "应用",
+          headerTitle: "应用",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="paperplane.fill" color={color} />
+            <IconSymbol size={24} name="app" color={color} />
           ),
         }}
       />
@@ -68,7 +69,8 @@ export default function TabLayout() {
           tabBarLabel: "代办",
           headerShown: false,
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="paperplane.fill" color={color} />
+            // <IconSymbol size={24} name="paperplane.fill" color={color} />
+            <CalendarCheck size={24} color={color} />
           ),
         }}
       />
@@ -78,7 +80,8 @@ export default function TabLayout() {
           tabBarLabel: "我的",
           headerShown: false,
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="paperplane.fill" color={color} />
+            // <IconSymbol size={24} name="paperplane.fill" color={color} />
+            <UserRoundMinus size={24} color={color} />
           ),
         }}
       />

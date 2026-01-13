@@ -5,6 +5,7 @@ import { useMenus } from "@/service/application";
 import { useAuth } from "@/store";
 import { Menu } from "@/types/menu";
 import { transformMenu } from "@/utils";
+import { Baby } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
@@ -67,6 +68,7 @@ export default function ApplicationScreen() {
               >
                 <YStack bg="$orange2" p="$2" br="$3">
                   {/* <Plus color="$orange10" size="$2" /> */}
+                  <Baby color="$orange10" size="$2" />
                 </YStack>
                 <Text mt="$3" fontSize="$2">
                   {child.menuLabel}

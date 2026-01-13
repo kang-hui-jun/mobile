@@ -1,6 +1,7 @@
 import { AppData } from "@/types/home-data-board";
+import { Plus } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
-import { Card, XStack, YStack, Text } from "tamagui";
+import { Card, Text, XStack, YStack } from "tamagui";
 
 interface AppProps {
   data: AppData[];
@@ -30,7 +31,7 @@ export const AppList = ({ data }: AppProps) => {
             onPress={() => handleNavigator(child)}
           >
             <YStack bg="$orange2" p="$2" br="$3">
-              {/* <Plus color="$orange10" size="$2" /> */}
+              <Plus color="$orange10" size="$2" />
             </YStack>
             <Text mt="$3" fontSize="$2">
               {child.menuLabel}

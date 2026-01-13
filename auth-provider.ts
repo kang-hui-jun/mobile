@@ -1,15 +1,16 @@
 import { User } from "@/types/user";
 import qs from "qs";
 import { AuthForm } from "./types/auth-form";
+import { storage } from "./store/mmkv";
 
 export const apiUrl = "https://v5.imocq.com";
 
-const localStorageKey = "__auth_provider_token__";
+const storageKey = "loginToken";
 
-// export const getToken = () => window.localStorage.getItem(localStorageKey);
+export const getToken = () => storage.getString(storageKey);
 
 export const handleUserResponse = ({ data }: { data: User }) => {
-//   window.localStorage.setItem(localStorageKey, data.loginToken || "");
+  storage.set(storageKey, data.loginToken);
   return data;
 };
 

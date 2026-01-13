@@ -1,9 +1,29 @@
 import { AuthForm } from "@/types/auth-form";
 import { User } from "@/types/user";
-import { createContext, ReactNode, useContext, useState } from "react";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import * as auth from "@/auth-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LayoutData } from "@/utils";
+import { http } from "@/utils/http";
+
+const bootstrapUser = async () => {
+  let user = null;
+  const token = auth.getToken();
+  if (token) {
+    const data = await http("/gw/system/GetSystemInfo", {
+      params: {},
+      loginToken: token,
+    });
+    user = { ...data.data, loginToken: token };
+  }
+  return user;
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,6 +50,7 @@ const AuthContext = createContext<
 AuthContext.displayName = "AuthContext";
 
 export const AppProviders = ({ children }: { children: ReactNode }) => {
+  const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [mobileLayout, setMobileLayout] = useState<LayoutData | null>(null);
   const [formData, setFormData] = useState<Record<string, unknown>>({});
@@ -41,6 +62,15 @@ export const AppProviders = ({ children }: { children: ReactNode }) => {
       setUser(null);
       queryClient.clear();
     });
+
+  useEffect(() => {
+    setLoading(true);
+    bootstrapUser()
+      .then(setUser)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return;
 
   return (
     <QueryClientProvider client={queryClient}>

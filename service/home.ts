@@ -40,8 +40,8 @@ export const useMessageNotificationsByTypeNew = (params: {
     queryFn: async () => {
       const response = await client(
         "/gw/message/GetMessageNotificationsByTypeNew",
-        {params}
-      );      
+        { params }
+      );
       return response.data.messageList;
     },
   });

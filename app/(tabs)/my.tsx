@@ -1,4 +1,7 @@
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 import { ChevronRight } from "@tamagui/lucide-icons";
+import { Stack } from "expo-router";
 import { Card, XStack } from "tamagui";
 
 const System = [
@@ -9,17 +12,25 @@ const System = [
 
 export default function MyScreen() {
   return (
-    <Card p={15} fd={"column"} gap={15} flex={1}>
-      {System.map((item, index) => (
-        <Card key={index} p={15} fd={"column"} gap={15} bg={"#FFFFFF"}>
-          {item.map((key) => (
-            <XStack key={key} jc={"space-between"} flex={1}>
-              {key}
-              <ChevronRight size="$1" color="$colorPress" />
-            </XStack>
-          ))}
-        </Card>
-      ))}
-    </Card>
+    <ThemedView>
+      <Stack.Screen
+        options={{
+          title: "我的",
+          headerShown: true,
+        }}
+      />
+      <Card p={15} fd={"column"} gap={15} flex={1}>
+        {System.map((item, index) => (
+          <Card key={index} p={15} fd={"column"} gap={15} bg={"#FFFFFF"}>
+            {item.map((key) => (
+              <XStack key={key}  justifyContent={"space-between"}>
+                <ThemedText>{key}</ThemedText>
+                <ChevronRight size="$1" color="$colorPress" />
+              </XStack>
+            ))}
+          </Card>
+        ))}
+      </Card>
+    </ThemedView>
   );
 }

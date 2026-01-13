@@ -1,5 +1,6 @@
 import { userNameField } from "@/constants";
 import { useMobileLayoutV2 } from "@/service/universal";
+import { ModuleData } from "@/types/home-data-board";
 import { Menu } from "@/types/menu";
 import { Area, Cell, MobileLayout, Row } from "@/types/mobile-layout";
 import { User } from "@/types/user";
@@ -163,3 +164,62 @@ export const transformMenu = (menus: Menu[], user: User | null) => {
 
   return result;
 };
+
+export const processModuleListData = (module_list_data: ModuleData) => {
+  const result = deepClone(module_list_data);
+  
+};
+
+function deepClone(module_list_data: ModuleData): ModuleData {
+  if (typeof (globalThis as any).structuredClone === "function") {
+    return (globalThis as any).structuredClone(module_list_data);
+  }
+
+  const visited = new WeakMap();
+  const cloneValue = <T>(value: T): T => {
+    if (value === null || typeof value !== "object") return value;
+    // Dates
+    if (value instanceof Date) return new Date(value.getTime()) as any;
+    // RegExp
+    if (value instanceof RegExp)
+      return new RegExp(value.source, value.flags) as any;
+    // Map
+    if (value instanceof Map) {
+      if (visited.has(value as any)) return visited.get(value as any);
+      const m = new Map();
+      visited.set(value as any, m);
+      (value as Map<any, any>).forEach((v, k) =>
+        m.set(cloneValue(k), cloneValue(v))
+      );
+      return m as any;
+    }
+    // Set
+    if (value instanceof Set) {
+      if (visited.has(value as any)) return visited.get(value as any);
+      const s = new Set();
+      visited.set(value as any, s);
+      (value as Set<any>).forEach((v) => s.add(cloneValue(v)));
+      return s as any;
+    }
+    // Array
+    if (Array.isArray(value)) {
+      if (visited.has(value as any)) return visited.get(value as any);
+      const arr: any[] = [];
+      visited.set(value as any, arr);
+      (value as any[]).forEach((v, i) => (arr[i] = cloneValue(v)));
+      return arr as any;
+    }
+    if (visited.has(value as any)) return visited.get(value as any);
+    const obj: any = {};
+    visited.set(value as any, obj);
+    Object.keys(value as any).forEach((k) => {
+      obj[k] = cloneValue((value as any)[k]);
+    });
+    Object.getOwnPropertySymbols(value as any).forEach((s) => {
+      obj[s as any] = cloneValue((value as any)[s as any]);
+    });
+    return obj;
+  };
+
+  return cloneValue(module_list_data);
+}

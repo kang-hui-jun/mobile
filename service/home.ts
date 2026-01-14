@@ -46,3 +46,31 @@ export const useMessageNotificationsByTypeNew = (params: {
     },
   });
 };
+
+const symbol = (value: string) => {
+  parseFloat(value)
+    .toFixed(2)
+    .replace(/(\d)(?=(\d{3})+\.)/g, "$1,");
+};
+
+export const useEntityAnalysisField = (
+  params: {
+    entityName: string;
+    fields: string;
+    analysisType: string;
+  },
+  data: any
+) => {
+  const client = useHttp();
+  return useQuery({
+    queryKey: ["EntityAnalysisField", params, data],
+    queryFn: async () => {
+      const response = await client("/gw/entity/EntityAnalysisField", {
+        method: "post",
+        params,
+        data,
+      });
+      return response.data[params.fields] ?? 0;
+    },
+  });
+};

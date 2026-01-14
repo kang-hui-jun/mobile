@@ -25,20 +25,20 @@ export type AppData = {
   show: boolean;
 };
 
-export type ModuleData = {
-  [key in string]: {
-    children: [];
-    cid: Cid;
-    dataPlate: DataPlate[];
-    id: number;
-    label: string;
-    name: string;
-    size: string;
-    theme: string;
-    type: ComponentType;
-    chartType?: ChartType;
-  }[];
+export type ModuleItem = {
+  id: number | string;
+  cid: Cid;
+  type: ComponentType;
+  chartType?: ChartType;
+  name?: string;
+  label?: string;
+  size?: string;
+  theme?: string;
+  dataPlate?: DataPlate[];
+  children?: ModuleItem[];
 };
+
+export type ModuleData = Record<string, ModuleItem[]>;
 
 export type DataPlate = {
   id: string;

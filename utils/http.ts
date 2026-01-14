@@ -1,5 +1,6 @@
-import { apiUrl } from "@/auth-provider";
+import { apiUrl, logout } from "@/auth-provider";
 import { useAuth } from "@/store";
+import { router } from "expo-router";
 import qs from "qs";
 import { useCallback } from "react";
 
@@ -37,9 +38,13 @@ export const http = async (
     //     return Promise.reject({ message: "请重新登录" });
     //   }
     const data = await response.json();
-    console.log(data);
 
     if (response.ok) {
+      if (data.error_code === "-400") {
+        logout();
+        router.replace("/login");
+        return Promise.reject({ message: "请重新登录" });
+      }
       return data;
     } else {
       return Promise.reject(data);

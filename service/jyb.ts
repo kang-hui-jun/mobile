@@ -1,13 +1,13 @@
 import { useHttp } from "@/utils/http";
 import { useQuery } from "@tanstack/react-query";
 
-export const useRememberlayout = () => {
+export const useRememberlayout = (params = {}) => {
   const client = useHttp();
   return useQuery({
-    queryKey: ["rememberlayout"],
+    queryKey: ["rememberlayout", params],
     queryFn: async () => {
       const response = await client("/gw/rememberlayout/GetRememberlayout", {
-        params: {},
+        params,
       });
       return response.data;
     },
@@ -23,6 +23,8 @@ export const useEntityLayoutById = (params: { layoutId: string }) => {
       const response = await client("/gw/entity/GetEntityLayoutById", {
         params,
       });
+      console.log(response);
+
       return response.data;
     },
   });

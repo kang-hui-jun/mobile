@@ -29,9 +29,9 @@ export default function HomeScreen() {
       ) as Configuration;
 
       const { module_list_data, app_list_data } = configuration;
-      const { homeDataBoardId } = panelList?.[0];
+      const { homeDataBoardId } = panelList?.[1];
       setActiveId(homeDataBoardId);
-      setAppData(app_list_data);
+      setAppData(app_list_data || []);
       setModuleData(module_list_data);
     }
   }, [data, panelList]);
@@ -46,7 +46,7 @@ export default function HomeScreen() {
         }}
         icon={Pencil}
         buttonProps={{
-          backgroundColor: "#ff4000",
+          backgroundColor: "#FF864B",
         }}
       />
       {moduleData?.[activeId]?.map((k) => (

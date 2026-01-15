@@ -18,7 +18,7 @@ interface AppProps {
 function transformArray(inputArr: AppData[]) {
   const transformedArr: AppData[] = [];
 
-  inputArr.forEach((item) => {
+  inputArr?.forEach((item) => {
     if (typeof item === "object" && item !== null) {
       const newItem = {
         ...item,

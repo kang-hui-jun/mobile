@@ -202,11 +202,11 @@ export const Jyb = () => {
   if (isLoading) return <Spinner size="small" color="$green10" />;
 
   return (
-    <Card bg={"#FFF"} borderRadius="$0" flex={1}>
+    <Card bg={"#FFF"} borderRadius="$0">
       <Card.Header>
         <Text>收支详情</Text>
       </Card.Header>
-      <XStack p={16} pt={0} justifyContent="space-between" gap={16} flex={1}>
+      <XStack p={16} pt={0} justifyContent="space-between" gap={16}>
         <YStack gap={16} w={"48%"}>
           <Card bg={"#ffede4"} h={96} p={10}>
             <Text fontSize={"$2"}>{today}</Text>

@@ -11,7 +11,7 @@ import { Pencil } from "@tamagui/lucide-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
-import { Card, Spinner } from "tamagui";
+import { Card, ScrollView, Spinner } from "tamagui";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -49,15 +49,17 @@ export default function HomeScreen() {
           backgroundColor: "#FF864B",
         }}
       />
-      {moduleData?.[activeId]?.map((k) => (
+      <ScrollView style={{flex: 1}}>
+        {moduleData?.[activeId]?.map((k) => (
         <Card key={k.id}>
           {k.cid === "applicationList" && <AppList data={appData} />}
           {k.cid === "incomeDetails" && <Jyb />}
-          {k.cid === "messageList" && <InfoList />}
+          {/* {k.cid === "messageList" && <InfoList />} */}
           {k.cid === "dataPlate" && <DataPlate />}
           {k.type === "CHART" && <Chart chartData={k} />}
         </Card>
       ))}
+      </ScrollView>
     </ThemedView>
   );
 }

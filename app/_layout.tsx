@@ -9,9 +9,9 @@ import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AppProviders } from "@/store";
-import config from "../tamagui.config";
-import { TamaguiProvider } from "tamagui";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { TamaguiProvider } from "tamagui";
+import config from "../tamagui.config";
 
 export const unstable_settings = {
   anchor: "(tabs)",

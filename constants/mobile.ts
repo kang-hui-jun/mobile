@@ -19,7 +19,8 @@ export const componentType = [
   "number",
   "area",
   "barcode",
-  "docComponent"
+  "docComponent",
+  "decimal"
 
 ] as const;
 

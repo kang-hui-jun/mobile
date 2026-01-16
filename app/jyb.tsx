@@ -10,8 +10,10 @@ import { Picker } from "@react-native-picker/picker";
 import { ChevronDown, FileImage } from "@tamagui/lucide-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context"; // 建议安装并使用
 import {
+  ScrollView,
   Button,
   Input,
   Spinner,
@@ -22,32 +24,94 @@ import {
 } from "tamagui";
 
 export default function JybScreen() {
+  const insets = useSafeAreaInsets(); // 获取系统安全区域高度
   const bottomSheetRef = useRef<BottomSheet>(null);
   const [activeId, setActiveId] = useState("");
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [formData, setFormData] = useState<Record<string, string>>({});
   const [formLayout, setFormLayout] = useState<FormComponent[]>([]);
 
-  const [selectedValue, setSelectedValue] = useState("核销"); // 临时选中的值
-  const [currentField, setCurrentField] = useState(""); // 记录当前正在操作哪个字段
+  const [selectedValue, setSelectedValue] = useState("核销");
+  const [currentField, setCurrentField] = useState("");
 
   const options = ["实付", "核销", "计提"];
 
-  // 打开 Sheet 时，记录是哪个字段触发的
-  const handleOpenSheet = (field: string) => {
-    setCurrentField(field);
-    setSelectedValue(formData[field] || options[0]); // 初始化为已选值或第一个
-    bottomSheetRef.current?.expand();
-  };
+  // --- 逻辑处理优化 ---
 
-  // 点击确认时，将值写入表单并关闭
-  const handleConfirm = () => {
+  const handleOpenSheet = useCallback(
+    (field: string) => {
+      setCurrentField(field);
+      // 打开时同步表单当前已有的值，若无则默认选第一个
+      setSelectedValue(formData[field] || options[0]);
+      bottomSheetRef.current?.expand();
+    },
+    [formData]
+  );
+
+  const handleConfirm = useCallback(() => {
     if (currentField) {
-      setFormData({ ...formData, [currentField]: selectedValue });
+      setFormData((prev) => ({ ...prev, [currentField]: selectedValue }));
     }
     bottomSheetRef.current?.close();
+  }, [currentField, selectedValue]);
+
+  const handleInput = (text: string, field: string) => {
+    setFormData((prev) => ({ ...prev, [field]: text }));
   };
 
-  const snapPoints = useMemo(() => ["40%"], []);
+  // --- 权限与资源处理 ---
+
+  const pickImage = async (field: string) => {
+    const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!granted) return;
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      // 存储文件路径或名称
+      setFormData((prev) => ({ ...prev, [field]: result.assets[0].uri }));
+    }
+  };
+
+  // --- 数据监听 ---
+
+  const { data, isLoading } = useRememberlayout();
+  const { data: entityLayout, isLoading: entityLoading } = useEntityLayoutById({
+    layoutId: activeId,
+  });
+
+  useEffect(() => {
+    if (data?.[0]?.layoutContext) {
+      const firstId = data[0].layoutContext[0].layoutId;
+      setActiveId(firstId);
+    }
+  }, [data]);
+
+  useEffect(() => {
+    if (entityLayout?.content) {
+      try {
+        const parsed = JSON.parse(entityLayout.content);
+        const container = parsed?.datajson?.find(
+          (item: any) => item.type === "ConfigContainerForm"
+        );
+        if (container?.form) {
+          const initialData: Record<string, string> = {};
+          container.form.forEach((f: any) => {
+            if (f.datasource?.field) initialData[f.datasource.field] = "";
+          });
+          setFormData(initialData);
+          setFormLayout(container.form);
+        }
+      } catch (e) {
+        console.error("解析布局失败", e);
+      }
+    }
+  }, [entityLayout]);
+
+  // --- 渲染辅助 ---
 
   const renderBackdrop = useCallback(
     (props: any) => (
@@ -60,185 +124,105 @@ export default function JybScreen() {
     []
   );
 
-  const [topMenu, setTopMenu] = useState<
-    {
-      layoutName: string;
-      layoutId: string;
-      layoutIcon: string;
-    }[]
-  >([]);
-
-  const { data, isLoading } = useRememberlayout();
-  const { data: entityLayout, isLoading: entityLoading } = useEntityLayoutById({
-    layoutId: activeId,
-  });
-
-  useEffect(() => {
-    if (data) {
-      setTopMenu(data?.[0]?.layoutContext);
-      setActiveId(data?.[0]?.layoutContext[0].layoutId);
-    }
-  }, [data]);
-
-  useEffect(() => {
-    if (entityLayout) {
-      const form: FormComponent[] = JSON.parse(
-        entityLayout?.content || "{}"
-      )?.datajson?.find(
-        (item: ContainerForm) => (item.type = "ConfigContainerForm")
-      )?.form;
-      const formData: Record<string, any> = {};
-      for (const item of form) {
-        formData[item.datasource?.field as string] = "";
-      }
-      setFormData(formData);
-      setFormLayout(form);
-    }
-  }, [entityLayout]);
-
-  const pickImage = async (field: string) => {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permissionResult.granted) {
-      return;
-    }
-
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images", "videos"],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    console.log(result);
-
-    if (!result.canceled) {
-      setFormData({ ...formData, [field]: result.assets[0].fileName });
-    }
-  };
-
-  const handleSheetChanges = useCallback((index: number) => {
-    console.log("handleSheetChanges", index);
-  }, []);
-
-  const handleTabChange = (id: string) => {
-    setActiveId(id);
-  };
-
-  const handleInput = (val: any, field: string) => {
-    setFormData({ ...formData, [field]: val.target.value });
-  };
-
-  const handleSubmit = () => {
-    console.log(formData);
-  };
-
-  if (isLoading)
-    return <Spinner size="small" color="$green10" />;
+  if (isLoading || entityLoading)
+    return <Spinner f={1} size="large" color="$orange10" />;
 
   return (
     <ThemedView style={styles.container}>
       <HorizontalTabs
-        data={topMenu || []}
+        data={data?.[0]?.layoutContext || []}
         activeId={activeId}
-        onTabChange={handleTabChange}
+        onTabChange={setActiveId}
         idField="layoutId"
         labelField="layoutName"
       />
 
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        flex={1}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 80 }} // 预留底部按钮空间
       >
-        <XStack fw="wrap" p={"$2"}>
-          {formLayout?.map((f: FormComponent) => {
+        <XStack fw="wrap" p="$2">
+          {formLayout?.map((f) => {
             const fieldKey = f.datasource?.field ?? "";
-            return (
-              <YStack key={f.gid} p="$2" w={"50%"} gap={"$3"}>
-                <Text fontSize="$2">{f.label.text}</Text>
+            const value = formData[fieldKey];
+            const required = f.expression?.find(
+              (key) => key.type === "required"
+            );
 
+            return (
+              <YStack key={f.gid} p="$2" w="50%" gap="$2">
+                <XStack ai="center" gap="$1" mb="$1">
+                  <Text fontSize="$2" color="$gray11" fontWeight="500">
+                    {f.label.text}
+                  </Text>
+                  {/* 这里可以根据 f 对象里的必填属性来判断是否显示，目前先默认显示 */}
+                  {required && (
+                    <Text
+                      color="#FF4D4F"
+                      fontSize="$4"
+                      lineHeight={12}
+                      marginTop={2}
+                    >
+                      *
+                    </Text>
+                  )}
+                </XStack>
+
+                {/* 金额输入 - 修正了 onChangeText */}
                 {f.type === "ConfigMoney" && (
                   <Input
-                    id={fieldKey || "name"}
                     placeholder="请输入"
                     textAlign="right"
                     size="$3"
-                    onChange={(e) => handleInput(e, f.datasource?.field || "")}
-                    value={fieldKey ? formData[fieldKey] : ""}
+                    keyboardType="numeric"
+                    value={value}
+                    onChangeText={(text) => handleInput(text, fieldKey)}
                   />
                 )}
 
+                {/* 图片上传 */}
                 {f.type === "ConfigPicture" && (
-                  // <Button
-                  //   flex={1}
-                  //   justifyContent="flex-end"
-                  //   bg={"#f8f8f8"}
-                  //   bc={"#ebebeb"}
-                  //   color={"$gray1"}
-                  //   size="$3"
-                  //   iconAfter={<ChevronDown size="$1" color="$colorPress" />}
-                  //   onPress={() => pickImage(fieldKey)}
-                  // >
-                  //   {formData[fieldKey] || "请选择"}
-                  // </Button>
-                  <FileImage
-                    flex={1}
-                    justifyContent="flex-end"
-                    bg={"#f0ecec4d"}
-                    bc={"#ebebeb"}
+                  <XStack
+                    bg="$gray3"
+                    bw={1}
+                    bc="$borderColor"
+                    br="$2"
                     w={62}
                     h={62}
-                    color={"#666"}
-                    size="$3"
+                    ai="center"
+                    jc="center"
                     onPress={() => pickImage(fieldKey)}
-                  />
+                  >
+                    <FileImage size="$2" color="$gray10" />
+                  </XStack>
                 )}
-                {f.type === "ConfigReference" && (
+
+                {/* 选择器类组件 (日期/引用/下拉) */}
+                {(f.type === "ConfigReference" ||
+                  f.type === "ConfigDate" ||
+                  f.type === "ConfigSelect") && (
                   <Button
-                    flex={1}
-                    justifyContent="flex-end"
-                    bg={"#f8f8f8"}
-                    bc={"#ebebeb"}
-                    color={"gray"}
+                    jc="flex-end"
+                    bg="$gray2"
+                    bc="$borderColor"
                     size="$3"
-                    iconAfter={<ChevronDown size="$1" color="#c0c4cc" />}
+                    iconAfter={<ChevronDown size="$1" color="$gray8" />}
                     onPress={() => handleOpenSheet(fieldKey)}
                   >
-                    {formData[fieldKey] || "请选择"}
-                  </Button>
-                )}
-                {f.type === "ConfigDate" && (
-                  <Button
-                    flex={1}
-                    justifyContent="flex-end"
-                    bg={"#f8f8f8"}
-                    bc={"#ebebeb"}
-                    color={"gray"}
-                    size="$3"
-                    iconAfter={<ChevronDown size="$1" color="#c0c4cc" />}
-                    onPress={() => handleOpenSheet(fieldKey)}
-                  >
-                    {formData[fieldKey] || "请选择"}
-                  </Button>
-                )}
-                {f.type === "ConfigSelect" && (
-                  <Button
-                    flex={1}
-                    justifyContent="flex-end"
-                    bg={"#f8f8f8"}
-                    bc={"#ebebeb"}
-                    color={"gray"}
-                    size="$3"
-                    iconAfter={<ChevronDown size="$1" color="#c0c4cc" />}
-                    onPress={() => handleOpenSheet(fieldKey)}
-                  >
-                    {formData[fieldKey] || "请选择"}
+                    <Text color={value ? "$color" : "$gray9"} fontSize="$3">
+                      {value || "请选择"}
+                    </Text>
                   </Button>
                 )}
 
+                {/* 多行文本 */}
                 {f.type === "ConfigTextarea" && (
-                  <TextArea flex={1} id="name" placeholder="请输入" size="$3" />
+                  <TextArea
+                    placeholder="请输入"
+                    size="$3"
+                    value={value}
+                    onChangeText={(text) => handleInput(text, fieldKey)}
+                  />
                 )}
               </YStack>
             );
@@ -246,11 +230,22 @@ export default function JybScreen() {
         </XStack>
       </ScrollView>
 
-      <XStack p={"$2"} w={"100%"}>
-        <Button w={"100%"} bg={"#FF864B"} color={"#FFF"} onPress={handleSubmit}>
+      {/* 底部按钮区域 - 增加了安全距离适配 */}
+      <YStack
+        p="$3"
+        bc="$background"
+        bbw={1}
+        style={{ paddingBottom: insets.bottom + 10 }}
+      >
+        <Button
+          themeInverse
+          size="$4"
+          bg="#FF864B"
+          onPress={() => console.log(formData)}
+        >
           提交
         </Button>
-      </XStack>
+      </YStack>
 
       <BottomSheet
         ref={bottomSheetRef}
@@ -261,9 +256,8 @@ export default function JybScreen() {
       >
         <BottomSheetView style={{ flex: 1 }}>
           <YStack f={1} bg="$background">
-            {/* 头部：取消 - 确认 */}
             <XStack
-              p="$4"
+              p="$3"
               jc="space-between"
               ai="center"
               bc="$borderColor"
@@ -283,13 +277,10 @@ export default function JybScreen() {
               </Button>
             </XStack>
 
-            {/* 滚轮选择器部分：模拟 uniapp picker-view */}
             <YStack f={1} jc="center">
               <Picker
                 selectedValue={selectedValue}
-                onValueChange={(itemValue) => setSelectedValue(itemValue)}
-                style={{ backgroundColor: "transparent" }}
-                itemStyle={{ fontSize: 20, height: 120 }} // 调整高度和字号
+                onValueChange={setSelectedValue}
               >
                 {options.map((item) => (
                   <Picker.Item key={item} label={item} value={item} />
@@ -304,7 +295,5 @@ export default function JybScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
 });

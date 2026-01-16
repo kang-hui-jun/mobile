@@ -187,9 +187,9 @@ export default function ModalScreen() {
                 </Label>
               </XStack>
 
-              {item.rows.map((key) => (
-                <FormItem key={key.name} row={key} />
-              ))}
+              {item.rows.map(
+                (key) => key.canCreate && <FormItem key={key.name} row={key} />
+              )}
             </Card>
           ))}
 

@@ -13,7 +13,7 @@ import { Plus } from "@tamagui/lucide-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Card, Spinner, XStack } from "tamagui";
+import { Card, Spinner } from "tamagui";
 
 export default function UniversalScreen() {
   const router = useRouter();
@@ -75,7 +75,7 @@ export default function UniversalScreen() {
       pathname: "/modal",
       params: {
         entity,
-        multipleLayoutId: "143-b71b29f5-76f0-4bdc-8b69-846e94f35586",
+        multipleLayoutId: "143-152b44f1-7cfb-4c15-a04a-55a649d9709e",
         entityName,
       },
     });
@@ -144,7 +144,7 @@ export default function UniversalScreen() {
         )}
       />
 
-      <XStack h={50} bg={"#FFFFFF"} style={{height: 50}} alignItems="center" pl={10} pr={10}>总数{}</XStack>
+      {/* <XStack h={50} bg={"#FFFFFF"} style={{height: 50}} alignItems="center" pl={10} pr={10}>总数{}</XStack> */}
     </ThemedView>
   );
 }

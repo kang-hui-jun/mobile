@@ -1,9 +1,20 @@
-import { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity } from "react-native";
+import WheelPicker from "@/components/Picker";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetView,
+} from "@gorhom/bottom-sheet";
+import { ChevronRight } from "@tamagui/lucide-icons";
+import { Stack } from "expo-router";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import DraggableFlatList, {
   RenderItemParams,
-  ScaleDecorator
+  ScaleDecorator,
 } from "react-native-draggable-flatlist";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Card, XStack } from "tamagui";
 
 const NUM_ITEMS = 10;
 function getColor(i: number) {
@@ -38,67 +49,122 @@ const System = [
 ];
 
 export default function MyScreen() {
-  const [data, setData] = useState(initialData);
+  const bottomSheetRef = useRef(null);
+  const [selectedValue, setSelectedValue] = useState("1");
 
-  const renderItem = ({ item, drag, isActive }: RenderItemParams<Item>) => {
-    return (
-      <ScaleDecorator>
-        <TouchableOpacity
-          onLongPress={drag}
-          disabled={isActive}
-          style={[
-            styles.rowItem,
-            { backgroundColor: isActive ? "red" : item.backgroundColor },
-          ]}
-        >
-          <Text style={styles.text}>{item.label}</Text>
-        </TouchableOpacity>
-      </ScaleDecorator>
-    );
-  };
+  // 设置 Bottom Sheet 展开的高度（Picker高度 + Toolbar高度）
+  const snapPoints = useMemo(() => ["45%"], []);
+
+  // 展开选择器
+  const handleOpenPicker = () => bottomSheetRef.current?.expand();
+
+  // 关闭选择器
+  const handleClose = () => bottomSheetRef.current?.close();
+
+  // 渲染背景遮罩（点击灰色区域关闭）
+  const renderBackdrop = useCallback(
+    (props) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+      />
+    ),
+    [],
+  );
+
+  // const renderItem = ({ item, drag, isActive }: RenderItemParams<Item>) => {
+  //   return (
+  //     <ScaleDecorator>
+  //       <TouchableOpacity
+  //         onLongPress={drag}
+  //         disabled={isActive}
+  //         style={[
+  //           styles.rowItem,
+  //           { backgroundColor: isActive ? "red" : item.backgroundColor },
+  //         ]}
+  //       >
+  //         <Text style={styles.text}>{item.label}</Text>
+  //       </TouchableOpacity>
+  //     </ScaleDecorator>
+  //   );
+  // };
 
   return (
-    // <ThemedView>
-    //   <Stack.Screen
-    //     options={{
-    //       title: "我的",
-    //       headerShown: true,
-    //     }}
-    //   />
-    //   <Card p={15} fd={"column"} gap={15}>
-    //     {System.map((item, index) => (
-    //       <Card key={index} p={15} fd={"column"} gap={15} bg={"#FFFFFF"}>
-    //         {item.map((key) => (
-    //           <XStack key={key}  justifyContent={"space-between"}>
-    //             <ThemedText>{key}</ThemedText>
-    //             <ChevronRight size="$1" color="$colorPress" />
-    //           </XStack>
-    //         ))}
-    //       </Card>
-    //     ))}
-    //   </Card>
-    // </ThemedView>
-    
-      <DraggableFlatList
-        data={data}
-        onDragEnd={({ data }) => setData(data)}
-        keyExtractor={(item) => item.key}
-        renderItem={renderItem}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Stack.Screen
+        options={{
+          title: "我的",
+          headerShown: true,
+        }}
       />
-    
+
+      <View style={styles.screen}>
+        <TouchableOpacity style={styles.input} onPress={handleOpenPicker}>
+          <Text>当前选择：{selectedValue}</Text>
+        </TouchableOpacity>
+
+        <BottomSheet
+          ref={bottomSheetRef}
+          index={-1} // 初始状态隐藏
+          snapPoints={snapPoints}
+          enablePanDownToClose={true}
+          backdropComponent={renderBackdrop}
+          // 移除默认手柄以便更像 uni-app 风格
+          handleComponent={null}
+        >
+          <BottomSheetView style={styles.contentContainer}>
+            {/* 顶部的自定义 Toolbar */}
+            <View style={styles.toolbar}>
+              <TouchableOpacity onPress={handleClose}>
+                <Text style={styles.btnCancel}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleClose}>
+                <Text style={styles.btnConfirm}>完成</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* 这里放入我们之前写的 SmoothPicker 核心滚动部分 */}
+            <WheelPicker
+              data={["1", "2", "3", "4", "5", "6", "7", "8"]}
+              onValueChange={(val) => setSelectedValue(val)}
+            />
+          </BottomSheetView>
+        </BottomSheet>
+      </View>
+    </GestureHandlerRootView>
+
+    // <DraggableFlatList
+    //   data={data}
+    //   onDragEnd={({ data }) => setData(data)}
+    //   keyExtractor={(item) => item.key}
+    //   renderItem={renderItem}
+    // />
   );
 }
 
 const styles = StyleSheet.create({
-  rowItem: {
-    height: 100,
-    alignItems: "center",
+  screen: {
+    flex: 1,
     justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
   },
-  text: {
-    color: "white",
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
+  input: {
+    padding: 15,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    width: "80%",
   },
+  contentContainer: { flex: 1, backgroundColor: "#fff" },
+  toolbar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    padding: 15,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#eee",
+  },
+  btnCancel: { color: "#666", fontSize: 16 },
+  btnConfirm: { color: "#007AFF", fontSize: 16, fontWeight: "bold" },
 });

@@ -6,6 +6,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  StyleProp,
+  ViewStyle,
 } from "react-native";
 
 const ITEM_HEIGHT = 50;
@@ -17,7 +21,7 @@ const WebFriendlyPicker = ({
   onValueChange = (index: string) => {},
 }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const scrollViewRef = useRef(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // 物理吸附执行函数
   const scrollToNearest = (offsetY: number) => {
@@ -33,7 +37,7 @@ const WebFriendlyPicker = ({
   };
 
   // 监听滚动实时更新状态
-  const onScroll = (event) => {
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = event.nativeEvent.contentOffset.y;
     const index = Math.round(y / ITEM_HEIGHT);
     if (index !== selectedIndex && index >= 0 && index < data.length) {
@@ -66,11 +70,9 @@ const WebFriendlyPicker = ({
           snapToInterval={ITEM_HEIGHT}
           decelerationRate="fast"
           // 停止滚动的 JS 补丁（针对不支持 snap 的浏览器环境）
-          onMomentumScrollEnd={(e) => {
-            console.log(e);
-
-            return scrollToNearest(e.nativeEvent.contentOffset.y);
-          }}
+          onMomentumScrollEnd={(e) =>
+            scrollToNearest(e.nativeEvent.contentOffset.y)
+          }
           onScrollEndDrag={(e) => {
             const velocity = e.nativeEvent.velocity?.y || 0;
             if (velocity === 0) scrollToNearest(e.nativeEvent.contentOffset.y);
@@ -80,7 +82,7 @@ const WebFriendlyPicker = ({
             web: {
               style: {
                 scrollSnapType: "y mandatory", // 强制纵向捕捉
-              },
+              } as StyleProp<ViewStyle>,
               contentContainerStyle: {
                 // 确保容器允许捕捉
               },
@@ -167,4 +169,4 @@ const styles = StyleSheet.create({
   selectedText: { color: "#000", fontWeight: "bold", fontSize: 22 },
 });
 
-export default WebFriendlyPicker;
+export { WebFriendlyPicker };

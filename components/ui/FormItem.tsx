@@ -42,9 +42,11 @@ export const FormItem = ({ row }: { row: Cell }) => {
 
   const Col = row.type === "textarea" ? YStack : XStack;
 
+  const disabled = row.readable || !row.canCreate;
+
   return (
     <Col gap="$2" key={row.label} p="$2">
-      <Label width={80} htmlFor="name" size={"$3"} overflowX={"auto"}>
+      <Label width={80} htmlFor="name" size={"$3"} whiteSpace={"nowrap"}>
         {row.label}
       </Label>
       {row.type === "text" &&
@@ -58,7 +60,7 @@ export const FormItem = ({ row }: { row: Cell }) => {
             // @ts-ignore
             onChange={handleInput}
             value={formData[row.name || ""] as any}
-            defaultValue={formData[row.value || ""] as any}
+            defaultValue={formData[row.name || ""] as any}
           />
         ) : (
           <Input
@@ -70,22 +72,46 @@ export const FormItem = ({ row }: { row: Cell }) => {
             // @ts-ignore
             onChangeText={handleInput}
             value={formData[row.name || ""] as any}
-            defaultValue={formData[row.value || ""] as any}
+            defaultValue={formData[row.name || ""] as any}
           />
         ))}
 
-      {["reference", "referencelist"].includes(row.type) && (
-        <Button
-          flex={1}
-          bg="$gray2"
-          bc="$borderColor"
-          justifyContent="flex-end"
-          size={"$3"}
-          iconAfter={<ChevronDown size="$1" color="$colorPress" />}
-        >
-          {formData[row.name] || "请选择"}
-        </Button>
-      )}
+      {["reference", "referencelist"].includes(row.type) &&
+        // <Button
+        //   flex={1}
+        //   bg="$gray2"
+        //   bc="$borderColor"
+        //   justifyContent="flex-end"
+        //   size={"$3"}
+        //   iconAfter={<ChevronDown size="$1" color="$colorPress" />}
+        // >
+        //   {formData[row.name] || "请选择"}
+        // </Button>
+        (Platform.OS === "web" ? (
+          <Input
+            flex={1}
+            id="name"
+            placeholder="请输入"
+            textAlign="right"
+            size="$3"
+            // @ts-ignore
+            onChange={handleInput}
+            value={formData[row.name || ""] as any}
+            defaultValue={formData[row.name || ""] as any}
+          />
+        ) : (
+          <Input
+            flex={1}
+            id="name"
+            placeholder="请输入"
+            textAlign="right"
+            size="$3"
+            // @ts-ignore
+            onChangeText={handleInput}
+            value={formData[row.name || ""] as any}
+            defaultValue={formData[row.name || ""] as any}
+          />
+        ))}
 
       {row.type === "location" && (
         <Input
@@ -97,7 +123,7 @@ export const FormItem = ({ row }: { row: Cell }) => {
           // @ts-ignore
           onChangeText={handleInput}
           value={formData[row.name || ""] as any}
-          defaultValue={formData[row.value || ""] as any}
+          defaultValue={formData[row.name || ""] as any}
         />
       )}
 
@@ -112,7 +138,7 @@ export const FormItem = ({ row }: { row: Cell }) => {
             // @ts-ignore
             onChangeText={handleInput}
             value={formData[row.name || ""] as any}
-            defaultValue={formData[row.value || ""] as any}
+            defaultValue={formData[row.name || ""] as any}
           />
           <Scan color={"$gray10"} />
         </XStack>
@@ -127,8 +153,9 @@ export const FormItem = ({ row }: { row: Cell }) => {
           size="$3"
           // @ts-ignore
           onChangeText={handleInput}
-          value={formData[row.name || ""] as any}
-          defaultValue={formData[row.value || ""] as any}
+          value={formData[row.name || ""] as string}
+          defaultValue={formData[row.name || ""] as any}
+          disabled={disabled}
         />
       )}
 
@@ -141,8 +168,9 @@ export const FormItem = ({ row }: { row: Cell }) => {
           size="$3"
           // @ts-ignore
           onChangeText={handleInput}
-          value={formData[row.name || ""] as any}
-          defaultValue={formData[row.value || ""] as any}
+          value={formData[row.name || ""] as string}
+          defaultValue={formData[row.name || ""] as any}
+          disabled={disabled}
         />
       )}
 
@@ -156,7 +184,7 @@ export const FormItem = ({ row }: { row: Cell }) => {
           // @ts-ignore
           onChangeText={handleInput}
           value={formData[row.name || ""] as any}
-          defaultValue={formData[row.value || ""] as any}
+          defaultValue={formData[row.name || ""] as any}
         />
       )}
 
@@ -170,7 +198,7 @@ export const FormItem = ({ row }: { row: Cell }) => {
           // @ts-ignore
           onChangeText={handleInput}
           value={formData[row.name || ""] as any}
-          defaultValue={formData[row.value || ""] as any}
+          defaultValue={formData[row.name || ""] as any}
         />
       )}
 
@@ -184,7 +212,7 @@ export const FormItem = ({ row }: { row: Cell }) => {
           // @ts-ignore
           onChangeText={handleInput}
           value={formData[row.name || ""] as any}
-          defaultValue={formData[row.value || ""] as any}
+          defaultValue={formData[row.name || ""] as any}
         />
       )}
 
@@ -214,18 +242,42 @@ export const FormItem = ({ row }: { row: Cell }) => {
         </Button>
       )}
 
-      {["datetime", "date"].includes(row.type) && (
-        <Button
-          flex={1}
-          justifyContent="flex-end"
-          bg="$gray2"
-          bc="$borderColor"
-          size={"$3"}
-          iconAfter={<ChevronDown size="$1" color="$colorPress" />}
-        >
-          {formData[row.name] || "请选择"}
-        </Button>
-      )}
+      {["datetime", "date"].includes(row.type) &&
+        // <Button
+        //   flex={1}
+        //   justifyContent="flex-end"
+        //   bg="$gray2"
+        //   bc="$borderColor"
+        //   size={"$3"}
+        //   iconAfter={<ChevronDown size="$1" color="$colorPress" />}
+        // >
+        //   {formData[row.name] || "请选择"}
+        // </Button>
+        (Platform.OS === "web" ? (
+          <Input
+            flex={1}
+            id="name"
+            placeholder="请输入"
+            textAlign="right"
+            size="$3"
+            // @ts-ignore
+            onChange={handleInput}
+            value={formData[row.name || ""] as any}
+            defaultValue={formData[row.name || ""] as any}
+          />
+        ) : (
+          <Input
+            flex={1}
+            id="name"
+            placeholder="请输入"
+            textAlign="right"
+            size="$3"
+            // @ts-ignore
+            onChangeText={handleInput}
+            value={formData[row.name || ""] as any}
+            defaultValue={formData[row.name || ""] as any}
+          />
+        ))}
 
       {row.type === "area" && (
         <Button

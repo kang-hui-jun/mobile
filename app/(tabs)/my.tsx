@@ -1,10 +1,11 @@
-import WheelPicker from "@/components/Picker";
+import { WebFriendlyPicker } from "@/components/Picker";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
+import { BottomSheetDefaultBackdropProps } from "@gorhom/bottom-sheet/lib/typescript/components/bottomSheetBackdrop/types";
 import { ChevronRight } from "@tamagui/lucide-icons";
 import { Stack } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -49,7 +50,7 @@ const System = [
 ];
 
 export default function MyScreen() {
-  const bottomSheetRef = useRef(null);
+  const bottomSheetRef = useRef<BottomSheet>(null);
   const [selectedValue, setSelectedValue] = useState("1");
 
   // 设置 Bottom Sheet 展开的高度（Picker高度 + Toolbar高度）
@@ -63,7 +64,7 @@ export default function MyScreen() {
 
   // 渲染背景遮罩（点击灰色区域关闭）
   const renderBackdrop = useCallback(
-    (props) => (
+    (props: BottomSheetDefaultBackdropProps) => (
       <BottomSheetBackdrop
         {...props}
         disappearsOnIndex={-1}
@@ -125,8 +126,7 @@ export default function MyScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* 这里放入我们之前写的 SmoothPicker 核心滚动部分 */}
-            <WheelPicker
+            <WebFriendlyPicker
               data={["1", "2", "3", "4", "5", "6", "7", "8"]}
               onValueChange={(val) => setSelectedValue(val)}
             />

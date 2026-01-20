@@ -1,4 +1,5 @@
 import { HorizontalTabs } from "@/components/HorizontalTabs";
+import { WebFriendlyPicker } from "@/components/Picker";
 import { ThemedView } from "@/components/themed-view";
 import { useEntityLayoutById, useRememberlayout } from "@/service/jyb";
 import { ContainerForm, FormComponent } from "@/types/jyb-entity-layout";
@@ -44,7 +45,7 @@ export default function JybScreen() {
       setSelectedValue(formData[field] || options[0]);
       bottomSheetRef.current?.expand();
     },
-    [formData]
+    [formData],
   );
 
   const handleConfirm = useCallback(() => {
@@ -95,7 +96,7 @@ export default function JybScreen() {
       try {
         const parsed = JSON.parse(entityLayout.content);
         const container = parsed?.datajson?.find(
-          (item: any) => item.type === "ConfigContainerForm"
+          (item: any) => item.type === "ConfigContainerForm",
         );
         if (container?.form) {
           const initialData: Record<string, string> = {};
@@ -121,7 +122,7 @@ export default function JybScreen() {
         appearsOnIndex={0}
       />
     ),
-    []
+    [],
   );
 
   if (isLoading || entityLoading)
@@ -146,7 +147,7 @@ export default function JybScreen() {
             const fieldKey = f.datasource?.field ?? "";
             const value = formData[fieldKey];
             const required = f.expression?.find(
-              (key) => key.type === "required"
+              (key) => key.type === "required",
             );
 
             return (
@@ -176,7 +177,7 @@ export default function JybScreen() {
                     size="$3"
                     keyboardType="numeric"
                     value={value}
-                    onChangeText={(text) => handleInput(text, fieldKey)}
+                    onChangeText={(text) => handleInput(text as any, fieldKey)}
                   />
                 )}
 
@@ -221,7 +222,7 @@ export default function JybScreen() {
                     placeholder="请输入"
                     size="$3"
                     value={value}
-                    onChangeText={(text) => handleInput(text, fieldKey)}
+                    onChangeText={(text) => handleInput(text as any, fieldKey)}
                   />
                 )}
               </YStack>
@@ -278,14 +279,10 @@ export default function JybScreen() {
             </XStack>
 
             <YStack f={1} jc="center">
-              <Picker
-                selectedValue={selectedValue}
-                onValueChange={setSelectedValue}
-              >
-                {options.map((item) => (
-                  <Picker.Item key={item} label={item} value={item} />
-                ))}
-              </Picker>
+              <WebFriendlyPicker
+                data={["1", "2", "3", "4", "5", "6", "7", "8"]}
+                onValueChange={(val) => setSelectedValue(val)}
+              />
             </YStack>
           </YStack>
         </BottomSheetView>

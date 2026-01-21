@@ -33,26 +33,16 @@ export default function ModalScreen() {
 
   const { data, isLoading } = useMobileLayoutV2(params);
 
-  const initEntityCascade = async (cell: Cell) => {
-    const { name, entity, defaultValue } = cell;
-    if (defaultValue) {
-      const initEntityMainData = await client("/gw/entity/initEntityMainData", {
-        params: {
-          id: defaultValue,
-          entity,
-          fieldName: name,
-          actionType: "create",
-        },
-      });
+  const formDataRef = useRef<Record<string, any>>({});
+  const expressDictRef = useRef<Record<string, string[]>>({});
+  const expressRef = useRef<Record<string, string>>({});
+  const prevFormDataRef = useRef<Record<string, any>>({});
+  const debounceTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
 
-      const mainData: Record<string, unknown> = {};
-      for (const item in initEntityMainData.data.data) {
-        const { destLabel, destValue } = initEntityMainData.data.data[item];
-        mainData[item] = destValue;
-      }
-      setFormData((pre) => ({ ...pre, ...mainData }));
-    }
-  };
+  // 实时同步状态到 Ref，确保异步回调永远能拿到最新值
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
 
   const fieldReg = /c__[a-z_]+(Id)?\.?(c__[a-z]+)?/g;
   const fieldReg2 = /\{.*?\}/g;
@@ -77,11 +67,13 @@ export default function ModalScreen() {
     if (!data?.data) return;
 
     const runInitialization = async () => {
-      // 1. 同步计算基础布局和初始表单数据
       const baseLayout: LayoutData = handleLayout(data.data);
-      const initialFormData: Record<string, unknown> = { ...formData }; // 继承现有值
+      const initialFormData: Record<string, any> = {};
       const newExpress: Record<string, string> = {};
       const newExpressDict: Record<string, string[]> = {};
+
+      // 用于记录哪些字段是被依赖的（只有这些字段需要防范 undefined）
+      const dependencyFields = new Set<string>();
 
       // 2. 预填基础字段值（Picklist/Date 等）
       for (const area of baseLayout.areas) {
@@ -108,9 +100,21 @@ export default function ModalScreen() {
             const fieldArr = regGetField(row.express);
             newExpress[row.name] = row.express;
             newExpressDict[row.name] = fieldArr as string[];
+
+            fieldArr?.forEach((f) => dependencyFields.add(f));
           }
         }
       }
+
+      const partialSnapshot: Record<string, any> = {};
+      dependencyFields.forEach((field) => {
+        // 只给这些字段建立“底稿”，确保它们在对比时 oldValue !== undefined
+        partialSnapshot[field] = initialFormData[field] ?? "";
+      });
+      prevFormDataRef.current = partialSnapshot;
+
+      // 2. 更新基础状态（此时 oldValue === newValue，不会触发公式）
+      setFormData(initialFormData);
 
       // 3. 处理异步级联数据（如用户名或引用字段）
       // 注意：我们将更新 initialFormData 而不是直接 setFormData
@@ -120,6 +124,7 @@ export default function ModalScreen() {
           if (shouldMapReferenceField(row)) {
             if (row.name === userNameField) {
               initialFormData[row.name] = user?.userId;
+              row.defaultValue = user?.userId;
             }
             // 将异步初始化逻辑改造为返回数据的形式
             cascadePromises.push(fetchCascadeData(row));
@@ -128,18 +133,15 @@ export default function ModalScreen() {
       }
 
       const cascadeResults = await Promise.all(cascadePromises);
-      console.log(cascadePromises);
-      console.log(cascadeResults);
-      
-      cascadeResults.forEach((result) => {
-        if (result) Object.assign(initialFormData, result);
-      });
+      const updatedData = { ...initialFormData };
+      cascadeResults.forEach((res) => res && Object.assign(updatedData, res));
+      setFormData(updatedData);
 
-      // 4. 最后：一次性同步所有状态
-      setFormData(initialFormData);
       setExpress(newExpress);
       setExpressDict(newExpressDict);
       setMobileLayout(baseLayout);
+      expressRef.current = newExpress;
+      expressDictRef.current = newExpressDict;
     };
 
     runInitialization();
@@ -148,8 +150,7 @@ export default function ModalScreen() {
   // 辅助函数：将原有的 initEntityCascade 改造为支持 Promise
   const fetchCascadeData = async (cell: Cell) => {
     const { name, entity, defaultValue } = cell;
-    console.log(cell);
-    
+
     if (!defaultValue) return null;
     try {
       const res = await client("/gw/entity/initEntityMainData", {
@@ -171,65 +172,81 @@ export default function ModalScreen() {
     }
   };
 
-  const prevFormDataRef = useRef<Record<string, unknown>>({});
-  const debounceTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
-  useEffect(() => {
-    const trigger_express = async (i: string) => {
-      let params = {};
-      expressDict[i] &&
-        expressDict[i].forEach((_) => {
-          params[_] = formData[_];
-        });
+  const trigger_express = async (targetField: string) => {
+    // 从 Ref 中同步读取，避开闭包
+    const currentDict = expressDictRef.current;
+    const currentExpress = expressRef.current;
+    const currentFormData = formDataRef.current;
 
+    if (!currentDict?.[targetField] || !currentExpress?.[targetField]) return;
+
+    // 构建参数
+    const params: Record<string, any> = {};
+    currentDict[targetField].forEach((depField) => {
+      params[depField] = currentFormData[depField];
+    });
+
+    try {
       const result = await client("/gw/formula/execute", {
         method: "post",
         data: {
           params,
-          fieldName: i,
+          fieldName: targetField,
           entityName: entity,
-          formula: express[i]
+          formula: currentExpress[targetField]
             .replace(/{/g, "")
             .replace(/}/g, "")
             .replace(/\./g, "_"),
         },
       });
+
       if (result.error_code === 0) {
-        setFormData((pre) => ({
-          ...pre,
-          [i]: result.data.value,
-        }));
+        setFormData((pre) => ({ ...pre, [targetField]: result.data.value }));
       }
-    };
+    } catch (e) {
+      console.error("公式执行失败:", e);
+    }
+  };
+
+  useEffect(() => {
     const prevFormData = prevFormDataRef.current;
-    if (prevFormData) {
-      for (const field in formData) {
-        const newValue = formData[field];
-        const oldValue = prevFormData[field];
+    const currentDict = expressDictRef.current; // 直接从 Ref 取字典
 
-        if (
-          JSON.stringify(oldValue) !== undefined &&
-          JSON.stringify(newValue) !== JSON.stringify(oldValue)
-        ) {
-          console.log(JSON.stringify(newValue), JSON.stringify(oldValue));
+    // 如果字典还没准备好，说明还没初始化完，跳过
+    if (!currentDict || Object.keys(currentDict).length === 0) return;
 
-          for (const i in expressDict) {
-            if (expressDict[i].includes(field)) {
-              if (debounceTimersRef.current[i]) {
-                clearTimeout(debounceTimersRef.current[i]);
-              }
-              debounceTimersRef.current[i] = setTimeout(() => {
-                trigger_express(i);
-              }, 500);
+    for (const field in formData) {
+      const newValue = formData[field];
+      const oldValue = prevFormData[field];
+
+      // 只有当旧值存在且发生变化时触发（避免首次挂载干扰，根据业务调整）
+      console.log(JSON.stringify(newValue), JSON.stringify(oldValue));
+
+      if (
+        oldValue !== undefined &&
+        JSON.stringify(newValue) !== JSON.stringify(oldValue)
+      ) {
+        // 遍历字典中受此字段影响的公式
+        for (const formulaField in currentDict) {
+          if (currentDict[formulaField].includes(field)) {
+            // 防抖处理
+            if (debounceTimersRef.current[formulaField]) {
+              clearTimeout(debounceTimersRef.current[formulaField]);
             }
+
+            debounceTimersRef.current[formulaField] = setTimeout(
+              trigger_express,
+              500,
+              formulaField,
+            );
           }
         }
       }
     }
+
+    // 更新旧值快照
     prevFormDataRef.current = formData;
-    return () => {
-      Object.values(debounceTimersRef.current).forEach(clearTimeout);
-    };
-  }, [formData, expressDict]);
+  }, [formData]);
 
   const handleAdd = () => {
     if (mobileLayout) {
@@ -280,9 +297,9 @@ export default function ModalScreen() {
                 </Label>
               </XStack>
 
-              {item.rows.map(
-                (key) => key.canCreate && <FormItem key={key.name} row={key} />,
-              )}
+              {item.rows.map((key) => (
+                <FormItem key={key.name} row={key} />
+              ))}
             </Card>
           ))}
 

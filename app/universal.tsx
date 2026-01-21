@@ -7,6 +7,7 @@ import {
   useAdvQueryZn,
   useGridColumnFields,
   useGridFilter,
+  useMultipleLayout,
 } from "@/service/universal";
 import { Filter } from "@/types/grid-filter";
 import { Plus } from "@tamagui/lucide-icons";
@@ -18,6 +19,7 @@ import { Card, Spinner } from "tamagui";
 export default function UniversalScreen() {
   const router = useRouter();
   const [activeId, setActiveId] = useState("");
+  const [multipleLayoutId, setMultipleLayoutId] = useState("");
   const { entity, entityName } = useLocalSearchParams();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useState({
@@ -32,6 +34,14 @@ export default function UniversalScreen() {
   const { data: fields } = useGridColumnFields({ entity } as any);
 
   const { data: gridColumnLayout } = useGridColumnFields({ entity } as any);
+
+  const { data: multipleLayout } = useMultipleLayout({ entity } as any);
+
+  useEffect(() => {
+    if (multipleLayout) {
+      setMultipleLayoutId(multipleLayout?.mLayouts[0].id);
+    }
+  }, [multipleLayout]);
 
   useEffect(() => {
     if (data) {
@@ -75,7 +85,7 @@ export default function UniversalScreen() {
       pathname: "/modal",
       params: {
         entity,
-        multipleLayoutId: "143-152b44f1-7cfb-4c15-a04a-55a649d9709e",
+        multipleLayoutId,
         entityName,
       },
     });
@@ -90,7 +100,7 @@ export default function UniversalScreen() {
   if (isLoading) return <Spinner size="small" color="$green10" />;
 
   return (
-    <ThemedView style={{flex: 1, backgroundColor: "rgba(0, 0, 0, 0.00)"}}>
+    <ThemedView style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.00)" }}>
       <Stack.Screen
         options={{
           title: entityName as string,

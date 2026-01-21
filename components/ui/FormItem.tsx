@@ -76,17 +76,34 @@ export const FormItem = ({ row }: { row: Cell }) => {
           />
         ))}
 
-      {["reference", "referencelist"].includes(row.type) &&
-        // <Button
-        //   flex={1}
-        //   bg="$gray2"
-        //   bc="$borderColor"
-        //   justifyContent="flex-end"
-        //   size={"$3"}
-        //   iconAfter={<ChevronDown size="$1" color="$colorPress" />}
-        // >
-        //   {formData[row.name] || "请选择"}
-        // </Button>
+      {["reference", "referencelist"].includes(row.type) && (
+        <Button
+          flex={1}
+          bg="$gray2"
+          bc="$borderColor"
+          justifyContent="flex-end"
+          size={"$3"}
+          iconAfter={<ChevronDown size="$1" color="$colorPress" />}
+        >
+          {formData[row.name] || "请选择"}
+        </Button>
+      )}
+
+      {row.type === "location" && (
+        <Input
+          flex={1}
+          id="name"
+          placeholder="请输入"
+          textAlign="right"
+          size="$3"
+          // @ts-ignore
+          onChangeText={handleInput}
+          value={formData[row.name || ""] as any}
+          defaultValue={formData[row.name || ""] as any}
+        />
+      )}
+
+      {row.type === "percent" &&
         (Platform.OS === "web" ? (
           <Input
             flex={1}
@@ -112,20 +129,6 @@ export const FormItem = ({ row }: { row: Cell }) => {
             defaultValue={formData[row.name || ""] as any}
           />
         ))}
-
-      {row.type === "location" && (
-        <Input
-          flex={1}
-          id="name"
-          placeholder="请输入"
-          textAlign="right"
-          size="$3"
-          // @ts-ignore
-          onChangeText={handleInput}
-          value={formData[row.name || ""] as any}
-          defaultValue={formData[row.name || ""] as any}
-        />
-      )}
 
       {row.type === "queryAssignment" && (
         <XStack flex={1} alignItems="center" gap={4}>
@@ -242,42 +245,18 @@ export const FormItem = ({ row }: { row: Cell }) => {
         </Button>
       )}
 
-      {["datetime", "date"].includes(row.type) &&
-        // <Button
-        //   flex={1}
-        //   justifyContent="flex-end"
-        //   bg="$gray2"
-        //   bc="$borderColor"
-        //   size={"$3"}
-        //   iconAfter={<ChevronDown size="$1" color="$colorPress" />}
-        // >
-        //   {formData[row.name] || "请选择"}
-        // </Button>
-        (Platform.OS === "web" ? (
-          <Input
-            flex={1}
-            id="name"
-            placeholder="请输入"
-            textAlign="right"
-            size="$3"
-            // @ts-ignore
-            onChange={handleInput}
-            value={formData[row.name || ""] as any}
-            defaultValue={formData[row.name || ""] as any}
-          />
-        ) : (
-          <Input
-            flex={1}
-            id="name"
-            placeholder="请输入"
-            textAlign="right"
-            size="$3"
-            // @ts-ignore
-            onChangeText={handleInput}
-            value={formData[row.name || ""] as any}
-            defaultValue={formData[row.name || ""] as any}
-          />
-        ))}
+      {["datetime", "date"].includes(row.type) && (
+        <Button
+          flex={1}
+          justifyContent="flex-end"
+          bg="$gray2"
+          bc="$borderColor"
+          size={"$3"}
+          iconAfter={<ChevronDown size="$1" color="$colorPress" />}
+        >
+          {formData[row.name] || "请选择"}
+        </Button>
+      )}
 
       {row.type === "area" && (
         <Button

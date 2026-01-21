@@ -3,6 +3,17 @@ import { Filter, GridFilter } from "@/types/grid-filter";
 import { useHttp } from "@/utils/http";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
+export const useMultipleLayout = (params: { entity: string }) => {
+  const client = useHttp();
+  return useQuery({
+    queryKey: ["MultipleLayout", params],
+    queryFn: async () => {
+      const response = await client("/gw/layout/getMultipleLayout", { params });
+      return response.data;
+    },
+  });
+};
+
 export const useMobileLayoutV2 = (params: {
   entity: string;
   id: string;
@@ -10,7 +21,7 @@ export const useMobileLayoutV2 = (params: {
 }) => {
   const client = useHttp();
   return useQuery({
-    queryKey: ["mobileLayoutV2"],
+    queryKey: ["mobileLayoutV2", params],
     queryFn: async () => {
       return client("/gw/layout/mobileLayoutV2", { params });
     },
@@ -20,7 +31,7 @@ export const useMobileLayoutV2 = (params: {
 export const useAdvQueryZn = (
   params?: object,
   data?: object,
-  options?: { enabled?: boolean }
+  options?: { enabled?: boolean },
 ) => {
   const client = useHttp();
   return useInfiniteQuery({
@@ -35,7 +46,7 @@ export const useAdvQueryZn = (
       });
 
       const totalItem = response.data?.totalData?.find((item: any) =>
-        Object.prototype.hasOwnProperty.call(item, "totalCount")
+        Object.prototype.hasOwnProperty.call(item, "totalCount"),
       );
       const totalCount = totalItem?.totalCount || 0;
 

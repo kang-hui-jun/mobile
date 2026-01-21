@@ -117,7 +117,6 @@ export default function ModalScreen() {
       setFormData(initialFormData);
 
       // 3. 处理异步级联数据（如用户名或引用字段）
-      // 注意：我们将更新 initialFormData 而不是直接 setFormData
       const cascadePromises = [];
       for (const area of baseLayout.areas) {
         for (const row of area.rows) {

@@ -48,9 +48,9 @@ export default function ModalScreen() {
       const mainData: Record<string, unknown> = {};
       for (const item in initEntityMainData.data.data) {
         const { destLabel, destValue } = initEntityMainData.data.data[item];
-        mainData[item] = destLabel || destValue;
+        mainData[item] = destValue;
       }
-      // setFormData({ ...formData, ...mainData });
+      setFormData((pre) => ({ ...pre, ...mainData }));
     }
   };
 
@@ -74,9 +74,16 @@ export default function ModalScreen() {
   }
 
   useEffect(() => {
-    if (data?.data) {
+    if (!data?.data) return;
+
+    const runInitialization = async () => {
+      // 1. 同步计算基础布局和初始表单数据
       const baseLayout: LayoutData = handleLayout(data.data);
-      const dataForm: Record<string, unknown> = {};
+      const initialFormData: Record<string, unknown> = { ...formData }; // 继承现有值
+      const newExpress: Record<string, string> = {};
+      const newExpressDict: Record<string, string[]> = {};
+
+      // 2. 预填基础字段值（Picklist/Date 等）
       for (const area of baseLayout.areas) {
         for (const row of area.rows) {
           if (row.type === "picklist") {
@@ -86,105 +93,143 @@ export default function ModalScreen() {
             const defaultValue = pick?.options?.find(
               (opt) => opt.isDefault === "Y",
             )?.lable;
-            dataForm[row.name] = defaultValue || "";
-          } else {
-            dataForm[row.name] = row.defaultValue || "";
-          }
-          if (
-            (row.defaultValue == "$NOW$" && row.type == "datetime") ||
-            row.type == "date"
+            initialFormData[row.name] = defaultValue || "";
+          } else if (
+            (row.defaultValue === "$NOW$" && row.type === "datetime") ||
+            row.type === "date"
           ) {
-            dataForm[row.name] = dayjs().format("YYYY-MM-DD") || "";
+            initialFormData[row.name] = dayjs().format("YYYY-MM-DD");
+          } else {
+            initialFormData[row.name] = row.defaultValue || "";
+          }
+
+          // 提取表达式逻辑
+          if (row.express) {
+            const fieldArr = regGetField(row.express);
+            newExpress[row.name] = row.express;
+            newExpressDict[row.name] = fieldArr as string[];
           }
         }
       }
-      setFormData({ ...formData, ...dataForm });
-      const initAsyncData = async (layoutData: LayoutData) => {
-        for (const area of layoutData.areas) {
-          for (const row of area.rows) {
-            if (row.express) {
-              const fieldArr = regGetField(row.express);
-              setExpress((pre) => ({
-                ...pre,
-                [row.name]: row.express,
-              }));
 
-              setExpressDict((pre) => ({
-                ...pre,
-                [row.name]: [...(fieldArr as any)],
-              }));
+      // 3. 处理异步级联数据（如用户名或引用字段）
+      // 注意：我们将更新 initialFormData 而不是直接 setFormData
+      const cascadePromises = [];
+      for (const area of baseLayout.areas) {
+        for (const row of area.rows) {
+          if (shouldMapReferenceField(row)) {
+            if (row.name === userNameField) {
+              initialFormData[row.name] = user?.userId;
             }
-            if (shouldMapReferenceField(row)) {
-              if (row.name === userNameField) {
-                row.defaultValue = user?.userId;
-              }
-              // todo-----------
-              initEntityCascade(row);
-            }
+            // 将异步初始化逻辑改造为返回数据的形式
+            cascadePromises.push(fetchCascadeData(row));
           }
         }
-        setMobileLayout(layoutData);
-      };
+      }
 
-      const runAsyncUpdates = async () => {
-        try {
-          await initAsyncData(baseLayout);
-        } catch (err) {
-          console.error("异步数据加载失败", err);
-          setMobileLayout(baseLayout);
-        }
-      };
+      const cascadeResults = await Promise.all(cascadePromises);
+      console.log(cascadePromises);
+      console.log(cascadeResults);
+      
+      cascadeResults.forEach((result) => {
+        if (result) Object.assign(initialFormData, result);
+      });
+
+      // 4. 最后：一次性同步所有状态
+      setFormData(initialFormData);
+      setExpress(newExpress);
+      setExpressDict(newExpressDict);
       setMobileLayout(baseLayout);
-      runAsyncUpdates();
-    }
-  }, [data]);
-
-  const prevFormDataRef = useRef<Record<string, unknown>>({});
-
-  useEffect(() => {
-    const ex = async () => {
-      const prevFormData = prevFormDataRef.current;
-      if (prevFormData) {
-        for (const field in formData) {
-          const newValue = formData[field];
-          const oldValue = prevFormData[field];
-
-          if (JSON.stringify(newValue) !== JSON.stringify(oldValue)) {
-            for (const i in expressDict) {
-              if (expressDict[i].includes(field)) {
-                let params = {};
-                expressDict[i] &&
-                  expressDict[i].forEach((_) => {
-                    params[_] = formData[_];
-                  });
-
-                const result = await client("/gw/formula/execute", {
-                  method: "post",
-                  data: {
-                    params,
-                    fieldName: i,
-                    entityName: entity,
-                    formula: express[i]
-                      .replace(/{/g, "")
-                      .replace(/}/g, "")
-                      .replace(/\./g, "_"),
-                  },
-                });
-                if (result.error_code === 0) {
-                  console.log({ [i]: result.data.value });
-
-                  setFormData((pre) => ({ ...pre, [i]: result.data.value }));
-                }
-              }
-            }
-          }
-        }
-      }
-      prevFormDataRef.current = formData;
     };
 
-    ex()
-  }, [formData]);
+    runInitialization();
+  }, [data]); // 仅在接口数据返回时触发
+
+  // 辅助函数：将原有的 initEntityCascade 改造为支持 Promise
+  const fetchCascadeData = async (cell: Cell) => {
+    const { name, entity, defaultValue } = cell;
+    console.log(cell);
+    
+    if (!defaultValue) return null;
+    try {
+      const res = await client("/gw/entity/initEntityMainData", {
+        params: {
+          id: defaultValue,
+          entity,
+          fieldName: name,
+          actionType: "create",
+        },
+      });
+      const mainData: Record<string, unknown> = {};
+      for (const item in res.data.data) {
+        mainData[item] = res.data.data[item].destValue;
+      }
+      return mainData;
+    } catch (e) {
+      console.error(`级联数据加载失败: ${name}`, e);
+      return null;
+    }
+  };
+
+  const prevFormDataRef = useRef<Record<string, unknown>>({});
+  const debounceTimersRef = useRef<Record<string, NodeJS.Timeout>>({});
+  useEffect(() => {
+    const trigger_express = async (i: string) => {
+      let params = {};
+      expressDict[i] &&
+        expressDict[i].forEach((_) => {
+          params[_] = formData[_];
+        });
+
+      const result = await client("/gw/formula/execute", {
+        method: "post",
+        data: {
+          params,
+          fieldName: i,
+          entityName: entity,
+          formula: express[i]
+            .replace(/{/g, "")
+            .replace(/}/g, "")
+            .replace(/\./g, "_"),
+        },
+      });
+      if (result.error_code === 0) {
+        setFormData((pre) => ({
+          ...pre,
+          [i]: result.data.value,
+        }));
+      }
+    };
+    const prevFormData = prevFormDataRef.current;
+    if (prevFormData) {
+      for (const field in formData) {
+        const newValue = formData[field];
+        const oldValue = prevFormData[field];
+
+        if (
+          JSON.stringify(oldValue) !== undefined &&
+          JSON.stringify(newValue) !== JSON.stringify(oldValue)
+        ) {
+          console.log(JSON.stringify(newValue), JSON.stringify(oldValue));
+
+          for (const i in expressDict) {
+            if (expressDict[i].includes(field)) {
+              if (debounceTimersRef.current[i]) {
+                clearTimeout(debounceTimersRef.current[i]);
+              }
+              debounceTimersRef.current[i] = setTimeout(() => {
+                trigger_express(i);
+              }, 500);
+            }
+          }
+        }
+      }
+    }
+    prevFormDataRef.current = formData;
+    return () => {
+      Object.values(debounceTimersRef.current).forEach(clearTimeout);
+    };
+  }, [formData, expressDict]);
 
   const handleAdd = () => {
     if (mobileLayout) {

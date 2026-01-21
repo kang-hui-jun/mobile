@@ -4,23 +4,34 @@ import { ModuleData } from "@/types/home-data-board";
 import { Menu } from "@/types/menu";
 import { Area, Cell, MobileLayout, Row } from "@/types/mobile-layout";
 import { User } from "@/types/user";
+import { pipe, map, curry } from "ramda";
 
 const mapRow = (area: Area) => ({
   ...area,
   rows: area.rows.flatMap((row: Row) => row.cells),
 });
 
+const mapIfExist = <T, R>(list: T[] | undefined, fn: (item: T) => R) =>
+  list ? list.map(fn) : undefined;
+
+const mapIfExistCurry = curry(
+  <T, R>(fn: (item: T) => R, list: T[] | undefined) =>
+    list ? list.map(fn) : undefined,
+);
+
+const transformAreas = mapIfExistCurry(mapRow as any);
+
 // 处理布局数据
 export const handleLayout = (data: MobileLayout) => {
   const result = {
     ...data,
-    areas: data.areas.map(mapRow),
+    areas: transformAreas(data.areas),
     hasDetail: {
       ...data?.hasDetail,
-      detailInfoAreas: data?.hasDetail?.detailInfoAreas?.map(mapRow),
-      detailLayout: data?.hasDetail?.detailLayout?.map(mapRow),
+      detailInfoAreas: transformAreas(data?.hasDetail?.detailInfoAreas),
+      detailLayout: transformAreas(data?.hasDetail?.detailLayout),
     },
-    listAreas: data?.listAreas?.map(mapRow),
+    listAreas: transformAreas(data?.listAreas),
   };
   return result;
 };
@@ -75,15 +86,6 @@ export const useInitDetailLayout = (params: InitDetailLayout) => {
   };
 };
 
-// 初始化映射和级联映射
-export const useInitEntityCascade = (params: Quote, layoutData: LayoutData) => {
-  const { entity, name } = layoutData["areas"][params.index].rows[params.seq];
-
-  // 明细模块名
-  const detailEntityName = layoutData["hasDetail"]["detailEntityName"];
-  if (!params.value.id) return layoutData;
-};
-
 export const getCurrentDate = (): string => {
   const d = new Date();
   const y = d.getFullYear();
@@ -132,10 +134,10 @@ export const transformMenu = (menus: Menu[], user: User | null) => {
 
     if (!isSpecialVersion && !isJzMenu) {
       const hasAccount = newChildren.some(
-        (child) => child.menuName === "ACCOUNT"
+        (child) => child.menuName === "ACCOUNT",
       );
       const hasContacts = newChildren.some(
-        (child) => child.menuName === "mailList"
+        (child) => child.menuName === "mailList",
       );
 
       if (hasAccount && !hasContacts) {
@@ -167,7 +169,6 @@ export const transformMenu = (menus: Menu[], user: User | null) => {
 
 export const processModuleListData = (module_list_data: ModuleData) => {
   const result = deepClone(module_list_data);
-  
 };
 
 function deepClone(module_list_data: ModuleData): ModuleData {
@@ -189,7 +190,7 @@ function deepClone(module_list_data: ModuleData): ModuleData {
       const m = new Map();
       visited.set(value as any, m);
       (value as Map<any, any>).forEach((v, k) =>
-        m.set(cloneValue(k), cloneValue(v))
+        m.set(cloneValue(k), cloneValue(v)),
       );
       return m as any;
     }
@@ -223,3 +224,36 @@ function deepClone(module_list_data: ModuleData): ModuleData {
 
   return cloneValue(module_list_data);
 }
+
+const matchWith = curry((reg, str) => str.match(reg) || []);
+
+const cleanId = (item: string) =>
+  item.includes("Id.") ? item.split(".")[1] : item;
+
+const stripBraces = (item: string) => item.slice(1, -1);
+
+// 处理以 "=" 开头的表达式
+export const pipeWithEqual = pipe(
+  matchWith(/\{.*?\}/g) as (str: string) => string[],
+  map(stripBraces),
+  map(cleanId),
+);
+
+// 普通处理
+export const pipeDefault = pipe(
+  matchWith(/c__[a-z_]+(Id)?\.?(c__[a-z]+)?/g) as (str: string) => string[],
+  map(cleanId),
+);
+
+export const regGetField = (express: string) => {
+  if (!express) return [];
+
+  // 根据首字母选择对应的流水线执行
+  const runPipeline = express[0] === "=" ? pipeWithEqual : pipeDefault;
+
+  try {
+    return runPipeline(express);
+  } catch (e) {
+    return [];
+  }
+};

@@ -4,7 +4,7 @@ import { userNameField } from "@/constants";
 import { useMobileLayoutV2 } from "@/service/universal";
 import { useAuth } from "@/store";
 import { Cell } from "@/types/mobile-layout";
-import { handleLayout, LayoutData, shouldMapReferenceField } from "@/utils";
+import { handleLayout, LayoutData, regGetField, shouldMapReferenceField } from "@/utils";
 import { useHttp } from "@/utils/http";
 import { Plus } from "@tamagui/lucide-icons";
 import dayjs from "dayjs";
@@ -17,8 +17,6 @@ export default function ModalScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const { entity, multipleLayoutId, entityName } = useLocalSearchParams();
   const client = useHttp();
-  const [express, setExpress] = useState<any>();
-  const [expressDict, setExpressDict] = useState<any>();
   const { mobileLayout, setMobileLayout, user, formData, setFormData } =
     useAuth();
   const params = {
@@ -43,25 +41,6 @@ export default function ModalScreen() {
   useEffect(() => {
     formDataRef.current = formData;
   }, [formData]);
-
-  const fieldReg = /c__[a-z_]+(Id)?\.?(c__[a-z]+)?/g;
-  const fieldReg2 = /\{.*?\}/g;
-  function regGetField(express: string) {
-    try {
-      if (express[0] == "=")
-        return express
-          .match(fieldReg2)
-          ?.map((item) => item.slice(1, item.length - 1))
-          ?.map((item) =>
-            item.indexOf("Id.") > -1 ? item.split(".")[1] : item,
-          );
-      return express
-        .match(fieldReg)
-        ?.map((item) => (item.indexOf("Id.") > -1 ? item.split(".")[1] : item));
-    } catch (e) {
-      return [];
-    }
-  }
 
   useEffect(() => {
     if (!data?.data) return;
@@ -135,9 +114,6 @@ export default function ModalScreen() {
       const updatedData = { ...initialFormData };
       cascadeResults.forEach((res) => res && Object.assign(updatedData, res));
       setFormData(updatedData);
-
-      setExpress(newExpress);
-      setExpressDict(newExpressDict);
       setMobileLayout(baseLayout);
       expressRef.current = newExpress;
       expressDictRef.current = newExpressDict;
@@ -200,7 +176,11 @@ export default function ModalScreen() {
       });
 
       if (result.error_code === 0) {
-        setFormData((pre) => ({ ...pre, [targetField]: result.data.value }));
+        const updatedFormData = {
+          ...formData,
+          [targetField]: result.data.value,
+        };
+        setFormData(updatedFormData);
       }
     } catch (e) {
       console.error("公式执行失败:", e);
@@ -217,10 +197,6 @@ export default function ModalScreen() {
     for (const field in formData) {
       const newValue = formData[field];
       const oldValue = prevFormData[field];
-
-      // 只有当旧值存在且发生变化时触发（避免首次挂载干扰，根据业务调整）
-      console.log(JSON.stringify(newValue), JSON.stringify(oldValue));
-
       if (
         oldValue !== undefined &&
         JSON.stringify(newValue) !== JSON.stringify(oldValue)

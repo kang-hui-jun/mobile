@@ -4,7 +4,9 @@ import { ChevronDown, FileImage, Scan } from "@tamagui/lucide-icons";
 import { useCameraPermissions } from "expo-camera";
 import { useState } from "react";
 import { Platform } from "react-native";
-import { Button, Input, Label, TextArea, XStack, YStack } from "tamagui";
+import { Button, Input, Label, TextArea, XStack, YStack, Image } from "tamagui";
+import * as ImagePicker from "expo-image-picker";
+import { getDocValue, getLabelSafe, getUriSafe } from "@/utils/universal";
 
 export const FormItem = ({ row }: { row: Cell }) => {
   const { formData, setFormData } = useAuth();
@@ -44,12 +46,43 @@ export const FormItem = ({ row }: { row: Cell }) => {
 
   const disabled = row.readable || !row.canCreate;
 
+  const pickImage = async (field: string) => {
+    const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!granted) return;
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      // 存储文件路径或名称
+      console.log(formData[field]);
+      const urls = formData[field] as string[];
+      urls.push(result.assets[0].uri);
+      const updatedFormData = { ...formData, [field]: urls };
+      console.log({ ...formData, [field]: urls });
+
+      setFormData(updatedFormData);
+    }
+  };
+
   return (
     <Col gap="$2" key={row.label} p="$2">
       <Label width={80} htmlFor="name" size={"$3"} whiteSpace={"nowrap"}>
         {row.label}
       </Label>
-      {row.type === "text" &&
+      {[
+        "text",
+        "location",
+        "url",
+        "percent",
+        "number",
+        "decimal",
+        "money",
+        "phone",
+      ].includes(row.type) &&
         (Platform.OS === "web" ? (
           <Input
             flex={1}
@@ -85,50 +118,9 @@ export const FormItem = ({ row }: { row: Cell }) => {
           size={"$3"}
           iconAfter={<ChevronDown size="$1" color="$colorPress" />}
         >
-          {formData[row.name]?.['label'] || "请选择"}
+          {getLabelSafe(row.name, formData)}
         </Button>
       )}
-
-      {row.type === "location" && (
-        <Input
-          flex={1}
-          id="name"
-          placeholder="请输入"
-          textAlign="right"
-          size="$3"
-          // @ts-ignore
-          onChangeText={handleInput}
-          value={formData[row.name || ""] as any}
-          defaultValue={formData[row.name || ""] as any}
-        />
-      )}
-
-      {row.type === "percent" &&
-        (Platform.OS === "web" ? (
-          <Input
-            flex={1}
-            id="name"
-            placeholder="请输入"
-            textAlign="right"
-            size="$3"
-            // @ts-ignore
-            onChange={handleInput}
-            value={formData[row.name || ""] as any}
-            defaultValue={formData[row.name || ""] as any}
-          />
-        ) : (
-          <Input
-            flex={1}
-            id="name"
-            placeholder="请输入"
-            textAlign="right"
-            size="$3"
-            // @ts-ignore
-            onChangeText={handleInput}
-            value={formData[row.name || ""] as any}
-            defaultValue={formData[row.name || ""] as any}
-          />
-        ))}
 
       {row.type === "queryAssignment" && (
         <XStack flex={1} alignItems="center" gap={4}>
@@ -145,64 +137,6 @@ export const FormItem = ({ row }: { row: Cell }) => {
           />
           <Scan color={"$gray10"} />
         </XStack>
-      )}
-
-      {row.type === "number" && (
-        <Input
-          flex={1}
-          id="name"
-          placeholder="请输入"
-          textAlign="right"
-          size="$3"
-          // @ts-ignore
-          onChangeText={handleInput}
-          value={formData[row.name || ""] as string}
-          defaultValue={formData[row.name || ""] as any}
-          disabled={disabled}
-        />
-      )}
-
-      {row.type === "decimal" && (
-        <Input
-          flex={1}
-          id="name"
-          placeholder="请输入"
-          textAlign="right"
-          size="$3"
-          // @ts-ignore
-          onChangeText={handleInput}
-          value={formData[row.name || ""] as string}
-          defaultValue={formData[row.name || ""] as any}
-          disabled={disabled}
-        />
-      )}
-
-      {row.type === "money" && (
-        <Input
-          flex={1}
-          id="name"
-          placeholder="请输入"
-          textAlign="right"
-          size="$3"
-          // @ts-ignore
-          onChangeText={handleInput}
-          value={formData[row.name || ""] as any}
-          defaultValue={formData[row.name || ""] as any}
-        />
-      )}
-
-      {row.type === "phone" && (
-        <Input
-          flex={1}
-          id="name"
-          placeholder="请输入"
-          textAlign="right"
-          size="$3"
-          // @ts-ignore
-          onChangeText={handleInput}
-          value={formData[row.name || ""] as any}
-          defaultValue={formData[row.name || ""] as any}
-        />
       )}
 
       {row.type === "textarea" && (
@@ -272,19 +206,33 @@ export const FormItem = ({ row }: { row: Cell }) => {
       )}
 
       {row.type === "picture" && (
-        <XStack
-          bg="$gray3"
-          bw={1}
-          bc="$borderColor"
-          br="$2"
-          w={62}
-          h={62}
-          ai="center"
-          jc="center"
-          // onPress={() => pickImage(fieldKey)}
-          ml={"auto"}
-        >
-          <FileImage size="$2" color="$gray10" />
+        <XStack ai="center" flex={1} gap={"$2"} justifyContent={"flex-end"}>
+          {getUriSafe(row.name, formData)?.map((uri) => (
+            <XStack br="$2" w={62} h={62} ai="center" jc="center">
+              <Image
+                alignSelf="center"
+                width="100%"
+                height="100%"
+                source={{
+                  uri,
+                }}
+                borderRadius="$4"
+              />
+            </XStack>
+          ))}
+          <XStack
+            bg="$gray3"
+            bw={1}
+            bc="$borderColor"
+            br="$2"
+            w={62}
+            h={62}
+            ai="center"
+            jc="center"
+            onPress={() => pickImage(row.name)}
+          >
+            <FileImage size="$2" color="$gray10" />
+          </XStack>
         </XStack>
       )}
 
@@ -299,7 +247,7 @@ export const FormItem = ({ row }: { row: Cell }) => {
           ai="center"
           jc="center"
           ml={"auto"}
-          // onPress={() => pickImage(fieldKey)}
+          onPress={() => pickImage(row.name)}
         >
           <FileImage size="$2" color="$gray10" />
         </XStack>
@@ -312,7 +260,7 @@ export const FormItem = ({ row }: { row: Cell }) => {
           size={"$3"}
           iconAfter={<ChevronDown size="$1" color="$colorPress" />}
         >
-          {formData[row.name] || "请选择"}
+          {getDocValue(row.name, formData) || "请选择"}
         </Button>
       )}
     </Col>

@@ -22,6 +22,7 @@ export const componentType = [
   "docComponent",
   "decimal",
   "percent",
+  "url"
 ] as const;
 
 export type ComponentType = (typeof componentType)[number];

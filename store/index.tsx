@@ -34,6 +34,20 @@ const queryClient = new QueryClient({
   },
 });
 
+export interface DocComponentValue {
+  content: string;
+  pictures: string[];
+  files: string[];
+  labels: { name: string; choose: boolean }[];
+}
+
+export type FormValue =
+  | string
+  | number
+  | { label: string; value: string | number }
+  | string[]
+  | DocComponentValue;
+
 const AuthContext = createContext<
   | {
       user: User | null;
@@ -42,8 +56,8 @@ const AuthContext = createContext<
       logout: () => Promise<void>;
       mobileLayout: LayoutData | null;
       setMobileLayout: (mobileLayout: LayoutData | null) => void;
-      formData: Record<string, unknown>;
-      setFormData: (formData: Record<string, unknown>) => void;
+      formData: Record<string, FormValue>;
+      setFormData: (formData: Record<string, FormValue>) => void;
     }
   | undefined
 >(undefined);
@@ -53,7 +67,7 @@ export const AppProviders = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [mobileLayout, setMobileLayout] = useState<LayoutData | null>(null);
-  const [formData, setFormData] = useState<Record<string, unknown>>({});
+  const [formData, setFormData] = useState<Record<string, FormValue>>({});
 
   const register = (form: AuthForm) => Promise.resolve(null).then(setUser);
   const login = (form: AuthForm) => auth.login(form).then(setUser);

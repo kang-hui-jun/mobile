@@ -134,3 +134,19 @@ export const useGridColumnLayout = (params: { entity: string }) => {
     queryFn: () => client("/gw/Gadiipr / gridColumnLayout", { params }),
   });
 };
+
+export const useEntityDataV2 = (params: {
+  entity: string;
+  entityId: string;
+}) => {
+  const client = useHttp();
+  return useQuery({
+    queryKey: ["entityDataV2", params],
+    queryFn: async () => {
+      const response = await client("/gw/genericEntity/GetEntityDataV2", {
+        params,
+      });
+      return response.data;
+    },
+  });
+};

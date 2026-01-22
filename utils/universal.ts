@@ -4,6 +4,7 @@ import { Cell, PickListItem } from "@/types/mobile-layout";
 import dayjs from "dayjs";
 import { LayoutData } from ".";
 import { ComponentType } from "@/constants/mobile";
+import { DocComponentValue, FormValue } from "@/store";
 
 const matchWith = curry((reg, str) => str.match(reg) || []);
 
@@ -73,19 +74,9 @@ const getDateValue = (row: Cell) =>
 // 报文
 const initialDocComponent = {
   content: "",
-  pictures: {
-    g_value: [],
-    g_fieldValue: [],
-    g_valuePicture: [],
-  },
-  files: {
-    g_value: [],
-    g_fieldValue: [],
-    g_valuePicture: [],
-  },
-  labels: {
-    g_value: [],
-  },
+  pictures: [],
+  files: [],
+  labels: [],
 };
 
 const getReferenceDefault = (row: Cell) => {
@@ -108,3 +99,49 @@ export const getInitialValue = (row: Cell, baseLayout: LayoutData) => {
 
   return (strategies[row.type] || strategies.default)();
 };
+
+const fromForm = <T extends FormValue>(
+  rowName: string,
+  formData: Record<string, FormValue>,
+  predicate: (val: FormValue) => val is T,
+  defaultValue: T,
+): T | null => {
+  return Maybe.of(formData[rowName])
+    .map((v) => (predicate(v) ? v : null)) // 内部进行类型收窄
+    .getOrElse(defaultValue);
+};
+
+const isLabelledValue = (
+  val: FormValue,
+): val is { label: string; value: string | number } => {
+  return typeof val === "object" && val !== null && "label" in val;
+};
+
+const isUriValue = (val: FormValue): val is string[] => {
+  return Array.isArray(val) && (val.length === 0 || typeof val[0] === "string");
+};
+
+const isDocValue = (val: FormValue): val is DocComponentValue => {
+  return (
+    typeof val === "object" &&
+    val !== null &&
+    "content" in val &&
+    "pictures" in val
+  );
+};
+
+// 提取 Label
+export const getLabelSafe = (name: string, data: Record<string, FormValue>) =>
+  fromForm(name, data, isLabelledValue, { label: "请选择", value: "" })?.label;
+
+// 提取 URI 数组
+export const getUriSafe = (name: string, data: Record<string, FormValue>) =>
+  fromForm(name, data, isUriValue, []);
+
+export const getDocValue = (name: string, data: Record<string, FormValue>) =>
+  fromForm(name, data, isDocValue, {
+    content: "",
+    pictures: [],
+    files: [],
+    labels: [],
+  });

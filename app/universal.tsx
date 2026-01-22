@@ -80,13 +80,25 @@ export default function UniversalScreen() {
     return list?.pages.flatMap((page) => page.list) || [];
   }, [list]);
 
-  const handleNavigator = (item: Record<string, string | number>) => {
+  const handleNavigator = () => {
     router.navigate({
       pathname: "/modal",
       params: {
         entity,
         multipleLayoutId,
         entityName,
+      },
+    });
+  };
+
+  const handleToDetail = (item: Record<string, string | number>) => {
+    router.navigate({
+      pathname: "/detail",
+      params: {
+        entity,
+        entityId: item.id,
+        entityName,
+        pageIndex: 1,
       },
     });
   };
@@ -115,7 +127,7 @@ export default function UniversalScreen() {
         labelField="filterName"
       />
       <DraggableFAB
-        onPress={() => console.log("新增任务")}
+        onPress={handleNavigator}
         icon={Plus}
         buttonProps={{
           backgroundColor: "#ff4000",
@@ -139,7 +151,7 @@ export default function UniversalScreen() {
           <Card
             key={item.accountId}
             bg="#FFFFFF"
-            onPress={() => handleNavigator(item)}
+            onPress={() => handleToDetail(item)}
           >
             <Card.Header>
               <ThemedText style={{ fontWeight: "bold" }}>

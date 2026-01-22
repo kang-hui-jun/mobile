@@ -11,27 +11,17 @@ const mapRow = (area: Area) => ({
   rows: area.rows.flatMap((row: Row) => row.cells),
 });
 
-const mapIfExist = <T, R>(list: T[] | undefined, fn: (item: T) => R) =>
-  list ? list.map(fn) : undefined;
-
-const mapIfExistCurry = curry(
-  <T, R>(fn: (item: T) => R, list: T[] | undefined) =>
-    list ? list.map(fn) : undefined,
-);
-
-const transformAreas = mapIfExistCurry(mapRow as any);
-
 // 处理布局数据
 export const handleLayout = (data: MobileLayout) => {
   const result = {
     ...data,
-    areas: transformAreas(data.areas),
+    areas: data.areas.map(mapRow),
     hasDetail: {
       ...data?.hasDetail,
-      detailInfoAreas: transformAreas(data?.hasDetail?.detailInfoAreas),
-      detailLayout: transformAreas(data?.hasDetail?.detailLayout),
+      detailInfoAreas: data?.hasDetail?.detailInfoAreas?.map(mapRow),
+      detailLayout: data?.hasDetail?.detailLayout?.map(mapRow),
     },
-    listAreas: transformAreas(data?.listAreas),
+    listAreas: data?.listAreas?.map(mapRow)
   };
   return result;
 };

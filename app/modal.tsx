@@ -4,7 +4,12 @@ import { userNameField } from "@/constants";
 import { useMobileLayoutV2 } from "@/service/universal";
 import { useAuth } from "@/store";
 import { Cell } from "@/types/mobile-layout";
-import { handleLayout, LayoutData, regGetField, shouldMapReferenceField } from "@/utils";
+import {
+  handleLayout,
+  LayoutData,
+  regGetField,
+  shouldMapReferenceField,
+} from "@/utils";
 import { useHttp } from "@/utils/http";
 import { Plus } from "@tamagui/lucide-icons";
 import dayjs from "dayjs";
@@ -54,7 +59,6 @@ export default function ModalScreen() {
       // 用于记录哪些字段是被依赖的（只有这些字段需要防范 undefined）
       const dependencyFields = new Set<string>();
 
-      // 2. 预填基础字段值（Picklist/Date 等）
       for (const area of baseLayout.areas) {
         for (const row of area.rows) {
           if (row.type === "picklist") {
@@ -74,7 +78,6 @@ export default function ModalScreen() {
             initialFormData[row.name] = row.defaultValue || "";
           }
 
-          // 提取表达式逻辑
           if (row.express) {
             const fieldArr = regGetField(row.express);
             newExpress[row.name] = row.express;
@@ -87,15 +90,12 @@ export default function ModalScreen() {
 
       const partialSnapshot: Record<string, any> = {};
       dependencyFields.forEach((field) => {
-        // 只给这些字段建立“底稿”，确保它们在对比时 oldValue !== undefined
         partialSnapshot[field] = initialFormData[field] ?? "";
       });
       prevFormDataRef.current = partialSnapshot;
 
-      // 2. 更新基础状态（此时 oldValue === newValue，不会触发公式）
       setFormData(initialFormData);
 
-      // 3. 处理异步级联数据（如用户名或引用字段）
       const cascadePromises = [];
       for (const area of baseLayout.areas) {
         for (const row of area.rows) {
@@ -104,7 +104,6 @@ export default function ModalScreen() {
               initialFormData[row.name] = user?.userId;
               row.defaultValue = user?.userId;
             }
-            // 将异步初始化逻辑改造为返回数据的形式
             cascadePromises.push(fetchCascadeData(row));
           }
         }
@@ -120,9 +119,8 @@ export default function ModalScreen() {
     };
 
     runInitialization();
-  }, [data]); // 仅在接口数据返回时触发
+  }, [data]);
 
-  // 辅助函数：将原有的 initEntityCascade 改造为支持 Promise
   const fetchCascadeData = async (cell: Cell) => {
     const { name, entity, defaultValue } = cell;
 
@@ -189,9 +187,8 @@ export default function ModalScreen() {
 
   useEffect(() => {
     const prevFormData = prevFormDataRef.current;
-    const currentDict = expressDictRef.current; // 直接从 Ref 取字典
+    const currentDict = expressDictRef.current;
 
-    // 如果字典还没准备好，说明还没初始化完，跳过
     if (!currentDict || Object.keys(currentDict).length === 0) return;
 
     for (const field in formData) {
@@ -201,10 +198,8 @@ export default function ModalScreen() {
         oldValue !== undefined &&
         JSON.stringify(newValue) !== JSON.stringify(oldValue)
       ) {
-        // 遍历字典中受此字段影响的公式
         for (const formulaField in currentDict) {
           if (currentDict[formulaField].includes(field)) {
-            // 防抖处理
             if (debounceTimersRef.current[formulaField]) {
               clearTimeout(debounceTimersRef.current[formulaField]);
             }
@@ -219,7 +214,6 @@ export default function ModalScreen() {
       }
     }
 
-    // 更新旧值快照
     prevFormDataRef.current = formData;
   }, [formData]);
 
@@ -253,7 +247,7 @@ export default function ModalScreen() {
       <Stack.Screen
         options={{
           title: ("新建" + entityName) as string,
-          headerShown: true, // 确保显示
+          headerShown: true,
         }}
       />
       <ScrollView ref={scrollViewRef}>

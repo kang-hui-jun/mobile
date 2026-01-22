@@ -4,17 +4,19 @@ import { userNameField } from "@/constants";
 import { useMobileLayoutV2 } from "@/service/universal";
 import { useAuth } from "@/store";
 import { Cell } from "@/types/mobile-layout";
-import {
-  handleLayout,
-  LayoutData,
-  regGetField,
-  shouldMapReferenceField,
-} from "@/utils";
+import { handleLayout, LayoutData, shouldMapReferenceField } from "@/utils";
+import { Maybe } from "@/utils/functor";
 import { useHttp } from "@/utils/http";
+import {
+  cleanFormula,
+  formatResult,
+  getDepParams,
+  getInitialValue,
+  regGetField,
+} from "@/utils/universal";
 import { Plus } from "@tamagui/lucide-icons";
-import dayjs from "dayjs";
 import { Stack, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ScrollView, StyleSheet } from "react-native";
 import { Button, Card, Label, Spinner, XStack, YStack } from "tamagui";
 
@@ -61,28 +63,11 @@ export default function ModalScreen() {
 
       for (const area of baseLayout.areas) {
         for (const row of area.rows) {
-          if (row.type === "picklist") {
-            const pick = baseLayout.pickList.find(
-              (key) => key.fieldName === row.name,
-            );
-            const defaultValue = pick?.options?.find(
-              (opt) => opt.isDefault === "Y",
-            )?.lable;
-            initialFormData[row.name] = defaultValue || "";
-          } else if (
-            (row.defaultValue === "$NOW$" && row.type === "datetime") ||
-            row.type === "date"
-          ) {
-            initialFormData[row.name] = dayjs().format("YYYY-MM-DD");
-          } else {
-            initialFormData[row.name] = row.defaultValue || "";
-          }
-
+          initialFormData[row.name] = getInitialValue(row, baseLayout);
           if (row.express) {
             const fieldArr = regGetField(row.express);
             newExpress[row.name] = row.express;
             newExpressDict[row.name] = fieldArr as string[];
-
             fieldArr?.forEach((f) => dependencyFields.add(f));
           }
         }
@@ -101,7 +86,10 @@ export default function ModalScreen() {
         for (const row of area.rows) {
           if (shouldMapReferenceField(row)) {
             if (row.name === userNameField) {
-              initialFormData[row.name] = user?.userId;
+              initialFormData[row.name] = {
+                label: user?.userName,
+                value: user?.userId,
+              };
               row.defaultValue = user?.userId;
             }
             cascadePromises.push(fetchCascadeData(row));
@@ -112,6 +100,7 @@ export default function ModalScreen() {
       const cascadeResults = await Promise.all(cascadePromises);
       const updatedData = { ...initialFormData };
       cascadeResults.forEach((res) => res && Object.assign(updatedData, res));
+
       setFormData(updatedData);
       setMobileLayout(baseLayout);
       expressRef.current = newExpress;
@@ -136,7 +125,10 @@ export default function ModalScreen() {
       });
       const mainData: Record<string, unknown> = {};
       for (const item in res.data.data) {
-        mainData[item] = res.data.data[item].destValue;
+        const { destLabel, destValue } = res.data.data[item];
+        mainData[item] = destLabel
+          ? { label: destLabel, value: destValue }
+          : res.data.data[item].destValue;
       }
       return mainData;
     } catch (e) {
@@ -146,37 +138,25 @@ export default function ModalScreen() {
   };
 
   const trigger_express = async (targetField: string) => {
-    // 从 Ref 中同步读取，避开闭包
-    const currentDict = expressDictRef.current;
-    const currentExpress = expressRef.current;
-    const currentFormData = formDataRef.current;
-
-    if (!currentDict?.[targetField] || !currentExpress?.[targetField]) return;
-
-    // 构建参数
-    const params: Record<string, any> = {};
-    currentDict[targetField].forEach((depField) => {
-      params[depField] = currentFormData[depField];
-    });
-
+    const maybeConfig = Maybe.of(expressDictRef.current?.[targetField]);
+    if (maybeConfig.isNothing) return;
     try {
+      // 2. 准备数据
+      const deps = expressDictRef.current![targetField];
+      const params = getDepParams(deps, formDataRef.current);
+      const formula = cleanFormula(expressRef.current?.[targetField] || "");
+
+      // 3. 执行 IO 副作用
       const result = await client("/gw/formula/execute", {
         method: "post",
-        data: {
-          params,
-          fieldName: targetField,
-          entityName: entity,
-          formula: currentExpress[targetField]
-            .replace(/{/g, "")
-            .replace(/}/g, "")
-            .replace(/\./g, "_"),
-        },
+        data: { params, fieldName: targetField, entityName: entity, formula },
       });
 
+      // 4. 更新状态
       if (result.error_code === 0) {
         const updatedFormData = {
           ...formData,
-          [targetField]: result.data.value,
+          [targetField]: formatResult(result.data.value, formData[targetField]),
         };
         setFormData(updatedFormData);
       }

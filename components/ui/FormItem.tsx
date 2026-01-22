@@ -85,7 +85,7 @@ export const FormItem = ({ row }: { row: Cell }) => {
           size={"$3"}
           iconAfter={<ChevronDown size="$1" color="$colorPress" />}
         >
-          {formData[row.name] || "请选择"}
+          {formData[row.name]?.['label'] || "请选择"}
         </Button>
       )}
 

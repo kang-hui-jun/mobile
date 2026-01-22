@@ -10,6 +10,7 @@ export type MobileLayout = {
   isUseShare: boolean;
   layoutId: string;
   multi: unknown[];
+  OAType?: string;
 };
 
 export type HasDetail = {

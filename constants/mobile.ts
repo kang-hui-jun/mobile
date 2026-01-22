@@ -21,8 +21,7 @@ export const componentType = [
   "barcode",
   "docComponent",
   "decimal",
-  "percent"
-
+  "percent",
 ] as const;
 
 export type ComponentType = (typeof componentType)[number];

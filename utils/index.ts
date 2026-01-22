@@ -2,9 +2,16 @@ import { userNameField } from "@/constants";
 import { useMobileLayoutV2 } from "@/service/universal";
 import { ModuleData } from "@/types/home-data-board";
 import { Menu } from "@/types/menu";
-import { Area, Cell, MobileLayout, Row } from "@/types/mobile-layout";
+import {
+  Area,
+  Cell,
+  MobileLayout,
+  PickListItem,
+  Row,
+} from "@/types/mobile-layout";
 import { User } from "@/types/user";
 import { pipe, map, curry } from "ramda";
+import { Maybe } from "./functor";
 
 const mapRow = (area: Area) => ({
   ...area,
@@ -21,7 +28,7 @@ export const handleLayout = (data: MobileLayout) => {
       detailInfoAreas: data?.hasDetail?.detailInfoAreas?.map(mapRow),
       detailLayout: data?.hasDetail?.detailLayout?.map(mapRow),
     },
-    listAreas: data?.listAreas?.map(mapRow)
+    listAreas: data?.listAreas?.map(mapRow),
   };
   return result;
 };
@@ -214,36 +221,3 @@ function deepClone(module_list_data: ModuleData): ModuleData {
 
   return cloneValue(module_list_data);
 }
-
-const matchWith = curry((reg, str) => str.match(reg) || []);
-
-const cleanId = (item: string) =>
-  item.includes("Id.") ? item.split(".")[1] : item;
-
-const stripBraces = (item: string) => item.slice(1, -1);
-
-// 处理以 "=" 开头的表达式
-export const pipeWithEqual = pipe(
-  matchWith(/\{.*?\}/g) as (str: string) => string[],
-  map(stripBraces),
-  map(cleanId),
-);
-
-// 普通处理
-export const pipeDefault = pipe(
-  matchWith(/c__[a-z_]+(Id)?\.?(c__[a-z]+)?/g) as (str: string) => string[],
-  map(cleanId),
-);
-
-export const regGetField = (express: string) => {
-  if (!express) return [];
-
-  // 根据首字母选择对应的流水线执行
-  const runPipeline = express[0] === "=" ? pipeWithEqual : pipeDefault;
-
-  try {
-    return runPipeline(express);
-  } catch (e) {
-    return [];
-  }
-};

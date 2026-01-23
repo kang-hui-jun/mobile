@@ -43,7 +43,7 @@ export function InfiniteList<T>({
   const renderFooter = () => {
     if (isLoading) {
       return (
-        <View style={[styles.footer, { marginLeft: width / 3 }]}>
+        <View style={[styles.footer, { width }]}>
           <ActivityIndicator size="small" color="#999" />
           <Text style={styles.footerText}>正在加载...</Text>
         </View>
@@ -51,7 +51,7 @@ export function InfiniteList<T>({
     }
     if (!hasMore && data.length > 0) {
       return (
-        <View style={[styles.footer, { marginLeft: width / 3 }]}>
+        <View style={[styles.footer, { width }]}>
           <Text style={styles.footerText}>—— 没有更多数据了 ——</Text>
         </View>
       );
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   footer: {
     paddingVertical: 20,
     alignItems: "center",
-    // justifyContent: "center",
+    justifyContent: "center",
     flexDirection: "row",
     gap: 8,
   },

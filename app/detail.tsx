@@ -102,7 +102,7 @@ export default function DetailScreen() {
       />
       {activeId === "detail" ? (
         <Detail mobileLayout={mobileLayout} />
-      ) : (
+      ) : menu.find((k) => k.menuName === activeId)?.selectNum ? (
         <TableList
           entity={menu.find((k) => k.menuName === activeId)?.menuName as string}
           entityId={entityId as string}
@@ -111,7 +111,7 @@ export default function DetailScreen() {
               ?.referenceFieldName as string
           }
         />
-      )}
+      ) : null}
     </ThemedView>
   );
 }

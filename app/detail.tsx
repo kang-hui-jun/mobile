@@ -1,18 +1,19 @@
 import { HorizontalTabs } from "@/components/HorizontalTabs";
-import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { Detail } from "@/components/ui/Detail";
+import { TableList } from "@/components/ui/TableList";
 import { useEntityDataV2, useMobileLayoutV2 } from "@/service/universal";
 import { useAuth } from "@/store";
 import { ReadMenu } from "@/types/detail";
+import { Cell } from "@/types/mobile-layout";
 import { handleLayout, LayoutData } from "@/utils";
-import { useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { Stack, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
-import { Card, Label, ScrollView, Spinner, XStack, YStack } from "tamagui";
+import { Spinner } from "tamagui";
 
 export default function DetailScreen() {
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [activeId, setActiveId] = useState("详情");
+  const [activeId, setActiveId] = useState("detail");
   const { entity, entityId, entityName } = useLocalSearchParams();
   const { mobileLayout, setMobileLayout } = useAuth();
 
@@ -46,26 +47,29 @@ export default function DetailScreen() {
     setActiveId(id);
   };
 
+  const attachDefaultValue = (entityMessage: any[]) => (row: Cell) => {
+    const item = entityMessage?.find((k) => k.fieldName === row.name);
+    return {
+      ...row,
+      defaultValue: item?.label || item?.fieldValue,
+    };
+  };
+
+  const hasValue = (row: Cell) => !!row.defaultValue;
+
   useEffect(() => {
     if (!mobileLayoutV2?.data) return;
     const runInitialization = () => {
       const baseLayout: LayoutData = handleLayout(mobileLayoutV2.data);
 
-      for (const area of baseLayout.areas) {
-        for (const row of area.rows) {
-          const filterEntityMessage = data?.entityMessage;
-          const item = filterEntityMessage?.find(
-            (key) => key.fieldName === row.name,
-          );
-          row.defaultValue = item?.label || item?.fieldValue;
-        }
-      }
+      const entityMessage = data?.entityMessage || [];
 
-      for (const area of baseLayout.areas) {        
-        area.rows = area.rows.filter((k) => k.defaultValue);
-      }
+      const updatedAreas = baseLayout.areas.map((area) => ({
+        ...area,
+        rows: area.rows.map(attachDefaultValue(entityMessage)).filter(hasValue),
+      }));
 
-      setMobileLayout(baseLayout);
+      setMobileLayout({ ...baseLayout, areas: updatedAreas });
     };
 
     runInitialization();
@@ -83,6 +87,12 @@ export default function DetailScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <Stack.Screen
+        options={{
+          title: entityName as string,
+          headerShown: true,
+        }}
+      />
       <HorizontalTabs
         data={menu || []}
         activeId={activeId}
@@ -90,32 +100,18 @@ export default function DetailScreen() {
         idField="menuName"
         labelField="menuLabel"
       />
-      <ScrollView ref={scrollViewRef}>
-        <YStack gap="$2" p="$2">
-          {mobileLayout?.areas?.map((item) => (
-            <Card
-              key={item.id}
-              elevate
-              size="$4"
-              bordered
-              background={"#ffffff"}
-            >
-              <XStack p="$2">
-                <Label size="$5" fontWeight={600}>
-                  {item.title}
-                </Label>
-              </XStack>
-
-              {item.rows.map((key) => (
-                // <FormItem key={key.name} row={key} />
-                <ThemedText key={key.name}>
-                  {key.label} : {key.defaultValue}
-                </ThemedText>
-              ))}
-            </Card>
-          ))}
-        </YStack>
-      </ScrollView>
+      {activeId === "detail" ? (
+        <Detail mobileLayout={mobileLayout} />
+      ) : (
+        <TableList
+          entity={menu.find((k) => k.menuName === activeId)?.menuName as string}
+          entityId={entityId as string}
+          fieldName={
+            menu.find((k) => k.menuName === activeId)
+              ?.referenceFieldName as string
+          }
+        />
+      )}
     </ThemedView>
   );
 }

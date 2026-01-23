@@ -68,14 +68,17 @@ export const useAdvQueryZn = (
   });
 };
 
-export const useGridColumnFields = (params: { entity: string }) => {
+export const useGridColumnFields = (params: {
+  entity: string;
+  type?: string;
+}) => {
   const client = useHttp();
   return useQuery<GridColumnFields[]>({
     queryKey: ["gridColumnFields", params],
     enabled: Boolean(params.entity),
     queryFn: async () => {
       const response = await client("/gw/apiGrid/gridColumnFields", {
-        params: { ...params, type: "" },
+        params: { ...params, type: params.type || "" },
       });
       return response.data;
     },

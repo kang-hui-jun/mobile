@@ -1,14 +1,14 @@
 type Filters = {
   fieldName: string;
-  filterType: string;
+  filterType?: string;
   operator: string;
-  type: string;
+  type?: string;
   value: string;
 };
 
 export type Filter = {
   type: string;
-  children: [];
+  children?: [];
   filters: Filters[];
 };
 

@@ -2,16 +2,22 @@ import { useAdvQueryZn, useGridColumnFields } from "@/service/universal";
 import { Filter } from "@/types/grid-filter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Label, ScrollView, XStack, YStack } from "tamagui";
-import { InfiniteList } from "../InfiniteList";
-import { ThemedView } from "../themed-view";
+import { DataTable } from "./DataTable";
+import { useRouter } from "expo-router";
 interface TableListProps {
   entity: string;
   entityId: string;
+  entityName: string;
   fieldName: string;
 }
 
-export const TableList = ({ entity, entityId, fieldName }: TableListProps) => {
+export const TableList = ({
+  entity,
+  entityId,
+  fieldName,
+  entityName,
+}: TableListProps) => {
+  const router = useRouter();
   const { data: gridColumnFields } = useGridColumnFields({ entity, type: "1" });
   const [searchData, setSearchData] = useState<Filter>();
   const queryClient = useQueryClient();
@@ -63,70 +69,37 @@ export const TableList = ({ entity, entityId, fieldName }: TableListProps) => {
     });
   };
 
-  const colStyle = {
-    p: "$2",
-    minWidth: 100, // 最小宽度
-    maxWidth: 150, // 建议使用固定数值的最大宽度，或者确保列宽逻辑一致
-    textAlign: "left" as const,
+  const handleToDetail = (item: Record<string, string | number>) => {
+    router.navigate({
+      pathname: "/detail",
+      params: {
+        entity,
+        entityId: item.id,
+        entityName,
+        pageIndex: 1,
+      },
+    });
   };
 
   if (!total) return;
 
-  return (
-    <ThemedView style={{ flex: 1 }}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <YStack>
-          <XStack
-            borderBottomWidth={1}
-            borderColor="$borderColor"
-            background="$background"
-          >
-            {gridColumnFields?.map((field) => (
-              <Label
-                key={field.fieldName}
-                {...colStyle}
-                width={120} // 【关键】给每一列设置相同的固定宽度（或根据业务设定宽度）
-                fontWeight="600"
-              >
-                {field.fieldLabel}
-              </Label>
-            ))}
-          </XStack>
+  const customFields = useMemo(() => {
+    return gridColumnFields?.map((f) => ({
+      ...f,
+      width: 120,
+    }));
+  }, [gridColumnFields]);
 
-          <InfiniteList
-            data={listData}
-            isRefreshing={isRefetching}
-            isLoading={isFetchingNextPage}
-            hasMore={!!hasNextPage}
-            onRefresh={handleRefresh}
-            onLoadMore={fetchNextPage}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => {
-              return (
-                <XStack borderBottomWidth={0.5} borderColor="#EEE">
-                  {gridColumnFields?.map((field) => (
-                    <Label
-                      key={field.fieldName}
-                      {...colStyle}
-                      width={120} // 【关键】必须与表头的宽度设置完全一致
-                    >
-                      {/* 使用 numberOfLines 处理超长内容，防止撑开容器 */}
-                      <Label
-                        numberOfLines={1}
-                        ellipsizeMode="tail"
-                        size="$3"
-                        width="100%"
-                      >
-                        {item[field.fieldName] || "--"}
-                      </Label>
-                    </Label>
-                  ))}
-                </XStack>
-              );
-            }}
-          />
-        </YStack>
-      </ScrollView>
-    </ThemedView>
+  return (
+    <DataTable
+      fields={customFields}
+      data={listData}
+      isRefreshing={isRefetching}
+      isLoadingMore={isFetchingNextPage}
+      hasMore={!!hasNextPage}
+      onRefresh={handleRefresh}
+      onLoadMore={fetchNextPage}
+      onToDetail={handleToDetail}
+    />
   );
 };

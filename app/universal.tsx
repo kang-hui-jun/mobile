@@ -3,6 +3,7 @@ import { HorizontalTabs } from "@/components/HorizontalTabs";
 import { InfiniteList } from "@/components/InfiniteList";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { DataTable } from "@/components/ui/DataTable";
 import {
   useAdvQueryZn,
   useGridColumnFields,
@@ -31,7 +32,7 @@ export default function UniversalScreen() {
 
   const { data, isLoading } = useGridFilter({ entity } as any);
 
-  const { data: fields } = useGridColumnFields({ entity } as any);
+  const { data: gridColumnFields } = useGridColumnFields({ entity } as any);
 
   const { data: gridColumnLayout } = useGridColumnFields({ entity } as any);
 
@@ -52,13 +53,13 @@ export default function UniversalScreen() {
   }, [data]);
 
   useEffect(() => {
-    if (fields) {
+    if (gridColumnFields) {
       setSearchParams({
         ...searchParams,
-        fields: fields?.map((item) => item.fieldName).join(","),
+        fields: gridColumnFields?.map((item) => item.fieldName).join(","),
       });
     }
-  }, [fields]);
+  }, [gridColumnFields]);
 
   const handleTabChange = (id: string) => {
     setActiveId(id);
@@ -78,6 +79,10 @@ export default function UniversalScreen() {
 
   const listData = useMemo(() => {
     return list?.pages.flatMap((page) => page.list) || [];
+  }, [list]);
+
+  const total = useMemo(() => {
+    return list?.pages.flatMap((page) => page.totalCount) || [];
   }, [list]);
 
   const handleNavigator = () => {
@@ -109,6 +114,13 @@ export default function UniversalScreen() {
     });
   };
 
+  const customFields = useMemo(() => {
+    return gridColumnFields?.map((f) => ({
+      ...f,
+      width: 120,
+    }));
+  }, [gridColumnFields]);
+
   if (isLoading) return <Spinner size="small" color="$green10" />;
 
   return (
@@ -133,38 +145,19 @@ export default function UniversalScreen() {
           backgroundColor: "#ff4000",
         }}
       />
-      <InfiniteList
-        style={{ padding: 4 }}
-        data={listData}
-        isRefreshing={isRefetching}
-        isLoading={isFetchingNextPage}
-        hasMore={!!hasNextPage}
-        onRefresh={handleRefresh}
-        onLoadMore={fetchNextPage}
-        keyExtractor={(item) => item.id}
-        ItemSeparatorComponent={() => (
-          <ThemedView
-            style={{ height: 8, backgroundColor: "rgba(0, 0, 0, 0.00)" }}
-          />
-        )}
-        renderItem={({ item }) => (
-          <Card
-            key={item.accountId}
-            bg="#FFFFFF"
-            onPress={() => handleToDetail(item)}
-          >
-            <Card.Header>
-              <ThemedText style={{ fontWeight: "bold" }}>
-                {fields?.map((k) => (
-                  <ThemedText key={k.fieldName}>
-                    {k.fieldLabel}:{item[k.fieldName]}
-                  </ThemedText>
-                ))}
-              </ThemedText>
-            </Card.Header>
-          </Card>
-        )}
-      />
+
+      {total ? (
+        <DataTable
+          fields={customFields}
+          data={listData}
+          isRefreshing={isRefetching}
+          isLoadingMore={isFetchingNextPage}
+          hasMore={!!hasNextPage}
+          onRefresh={handleRefresh}
+          onLoadMore={fetchNextPage}
+          onToDetail={handleToDetail}
+        />
+      ) : null}
 
       {/* <XStack h={50} bg={"#FFFFFF"} style={{height: 50}} alignItems="center" pl={10} pr={10}>总数{}</XStack> */}
     </ThemedView>

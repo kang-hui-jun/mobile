@@ -17,14 +17,7 @@ export default function DetailScreen() {
   const { entity, entityId, entityName } = useLocalSearchParams();
   const { mobileLayout, setMobileLayout } = useAuth();
 
-  const [menu, setMenu] = useState<ReadMenu[]>([
-    {
-      menuLabel: "详情",
-      menuName: "detail",
-      referenceFieldName: "",
-      selectNum: 0,
-    },
-  ]);
+  const [menu, setMenu] = useState<ReadMenu[]>([]);
 
   const params = {
     entity,
@@ -77,8 +70,18 @@ export default function DetailScreen() {
 
   useEffect(() => {
     if (data) {
+      const initialMenu = [
+        {
+          menuLabel: "详情",
+          menuName: "detail",
+          referenceFieldName: "",
+          selectNum: 0,
+        },
+      ];
       const { ReadMenu } = data;
-      const updateMenu = [...menu, ...ReadMenu];
+      const updateMenu = [...initialMenu, ...ReadMenu];
+      setActiveId("detail");
+
       setMenu(updateMenu);
     }
   }, [data]);
@@ -106,6 +109,9 @@ export default function DetailScreen() {
         <TableList
           entity={menu.find((k) => k.menuName === activeId)?.menuName as string}
           entityId={entityId as string}
+          entityName={
+            menu.find((k) => k.menuName === activeId)?.menuLabel as string
+          }
           fieldName={
             menu.find((k) => k.menuName === activeId)
               ?.referenceFieldName as string

@@ -1,5 +1,6 @@
 import { GridColumnFields } from "@/types/grid-column-fields";
 import { Filter, GridFilter } from "@/types/grid-filter";
+import { Area } from "@/types/mobile-layout";
 import { useHttp } from "@/utils/http";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
@@ -132,9 +133,12 @@ export const useGridFilter = (params: { entity: string }) => {
 
 export const useGridColumnLayout = (params: { entity: string }) => {
   const client = useHttp();
-  return useQuery({
+  return useQuery<Area[]>({
     queryKey: ["gridColumnLayout", params],
-    queryFn: () => client("/gw/Gadiipr / gridColumnLayout", { params }),
+    queryFn: async () => {
+      const response = await client("/gw/apiGrid/gridColumnLayout", { params });
+      return response.data
+    },
   });
 };
 

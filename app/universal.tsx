@@ -1,12 +1,11 @@
 import { DraggableFAB } from "@/components/DraggableFAB";
 import { HorizontalTabs } from "@/components/HorizontalTabs";
-import { InfiniteList } from "@/components/InfiniteList";
-import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { DataTable } from "@/components/ui/DataTable";
 import {
   useAdvQueryZn,
   useGridColumnFields,
+  useGridColumnLayout,
   useGridFilter,
   useMultipleLayout,
 } from "@/service/universal";
@@ -15,7 +14,7 @@ import { Plus } from "@tamagui/lucide-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Card, Spinner } from "tamagui";
+import { Spinner } from "tamagui";
 
 export default function UniversalScreen() {
   const router = useRouter();
@@ -34,7 +33,7 @@ export default function UniversalScreen() {
 
   const { data: gridColumnFields } = useGridColumnFields({ entity } as any);
 
-  const { data: gridColumnLayout } = useGridColumnFields({ entity } as any);
+  const { data: gridColumnLayout } = useGridColumnLayout({ entity } as any);
 
   const { data: multipleLayout } = useMultipleLayout({ entity } as any);
 
@@ -60,6 +59,11 @@ export default function UniversalScreen() {
       });
     }
   }, [gridColumnFields]);
+
+  useEffect(() => {
+    if (!gridColumnLayout) return;
+    console.log(gridColumnLayout);
+  }, [gridColumnLayout]);
 
   const handleTabChange = (id: string) => {
     setActiveId(id);

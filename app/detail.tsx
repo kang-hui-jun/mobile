@@ -1,21 +1,29 @@
+import { DraggableFAB } from "@/components/DraggableFAB";
 import { HorizontalTabs } from "@/components/HorizontalTabs";
 import { ThemedView } from "@/components/themed-view";
 import { Detail } from "@/components/ui/Detail";
 import { TableList } from "@/components/ui/TableList";
-import { useEntityDataV2, useMobileLayoutV2 } from "@/service/universal";
+import {
+  useEntityDataV2,
+  useMobileLayoutV2,
+  useMultipleLayout,
+} from "@/service/universal";
 import { useAuth } from "@/store";
 import { ReadMenu } from "@/types/detail";
 import { Cell } from "@/types/mobile-layout";
 import { handleLayout, LayoutData } from "@/utils";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Plus } from "@tamagui/lucide-icons";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
 import { Spinner } from "tamagui";
 
 export default function DetailScreen() {
+  const router = useRouter();
   const [activeId, setActiveId] = useState("detail");
   const { entity, entityId, entityName } = useLocalSearchParams();
   const { mobileLayout, setMobileLayout } = useAuth();
+  const [multipleLayoutId, setMultipleLayoutId] = useState("");
 
   const [menu, setMenu] = useState<ReadMenu[]>([]);
 
@@ -35,6 +43,14 @@ export default function DetailScreen() {
     entity,
     entityId,
   } as any);
+
+  const { data: multipleLayout } = useMultipleLayout({ entity } as any);
+
+  useEffect(() => {
+    if (multipleLayout) {
+      setMultipleLayoutId(multipleLayout?.mLayouts[0].id);
+    }
+  }, [multipleLayout]);
 
   const handleTabChange = (id: string) => {
     setActiveId(id);
@@ -86,6 +102,25 @@ export default function DetailScreen() {
     }
   }, [data]);
 
+  const handleNavigator = () => {
+    const referenceFieldName = menu?.find(
+      (k) => k.menuName === activeId,
+    )?.referenceFieldName;
+    const entity = menu?.find(
+      (k) => k.menuName === activeId,
+    )?.menuName
+    router.navigate({
+      pathname: "/modal",
+      params: {
+        entity,
+        entityId,
+        multipleLayoutId,
+        entityName,
+        referenceFieldName,
+      },
+    });
+  };
+
   if (isLoading) return <Spinner size="small" color="$green10" />;
 
   return (
@@ -106,17 +141,28 @@ export default function DetailScreen() {
       {activeId === "detail" ? (
         <Detail mobileLayout={mobileLayout} />
       ) : menu.find((k) => k.menuName === activeId)?.selectNum ? (
-        <TableList
-          entity={menu.find((k) => k.menuName === activeId)?.menuName as string}
-          entityId={entityId as string}
-          entityName={
-            menu.find((k) => k.menuName === activeId)?.menuLabel as string
-          }
-          fieldName={
-            menu.find((k) => k.menuName === activeId)
-              ?.referenceFieldName as string
-          }
-        />
+        <>
+          <DraggableFAB
+            onPress={handleNavigator}
+            icon={Plus}
+            buttonProps={{
+              backgroundColor: "#ff4000",
+            }}
+          />
+          <TableList
+            entity={
+              menu.find((k) => k.menuName === activeId)?.menuName as string
+            }
+            entityId={entityId as string}
+            entityName={
+              menu.find((k) => k.menuName === activeId)?.menuLabel as string
+            }
+            fieldName={
+              menu.find((k) => k.menuName === activeId)
+                ?.referenceFieldName as string
+            }
+          />
+        </>
       ) : null}
     </ThemedView>
   );

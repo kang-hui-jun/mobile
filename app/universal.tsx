@@ -62,7 +62,6 @@ export default function UniversalScreen() {
 
   useEffect(() => {
     if (!gridColumnLayout) return;
-    console.log(gridColumnLayout);
   }, [gridColumnLayout]);
 
   const handleTabChange = (id: string) => {

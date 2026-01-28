@@ -22,7 +22,8 @@ import { Button, Card, Label, Spinner, XStack, YStack } from "tamagui";
 
 export default function ModalScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
-  const { entity, multipleLayoutId, entityName } = useLocalSearchParams();
+  const { entity, multipleLayoutId, entityName, referenceFieldName, entityId } =
+    useLocalSearchParams();
   const client = useHttp();
   const { mobileLayout, setMobileLayout, user, formData, setFormData } =
     useAuth();
@@ -84,7 +85,7 @@ export default function ModalScreen() {
       const cascadePromises = [];
       for (const area of baseLayout.areas) {
         for (const row of area.rows) {
-          if (shouldMapReferenceField(row)) {
+          if (shouldMapReferenceField(row) || referenceFieldName) {
             if (row.name === userNameField) {
               initialFormData[row.name] = {
                 label: user?.userName,
@@ -113,11 +114,11 @@ export default function ModalScreen() {
   const fetchCascadeData = async (cell: Cell) => {
     const { name, entity, defaultValue } = cell;
 
-    if (!defaultValue) return null;
+    if (!defaultValue && !referenceFieldName) return null;
     try {
       const res = await client("/gw/entity/initEntityMainData", {
         params: {
-          id: defaultValue,
+          id: defaultValue || entityId,
           entity,
           fieldName: name,
           actionType: "create",
@@ -130,10 +131,86 @@ export default function ModalScreen() {
           ? { label: destLabel, value: destValue }
           : res.data.data[item].destValue;
       }
+
+      client("/gw/entity/GetEntityFieldMappingManager", {
+        params: {
+          id: entityId,
+          entity,
+          fieldName: referenceFieldName,
+          actionType: "create",
+        },
+      }).then((entityFieldMappingManager) => {
+        for (const item of entityFieldMappingManager.data) {
+          if (item.details) {
+            mappingDetailed(item.details);
+          }
+        }
+
+        const fromDestName = Array.from(
+          entityFieldMappingManager.data,
+          ({ destName }) => destName,
+        );
+
+        if (fromDestName.length) {
+          mapping({ data: entityFieldMappingManager.data, fromDestName, cell });
+        }
+      });
+
       return mainData;
     } catch (e) {
       console.error(`级联数据加载失败: ${name}`, e);
       return null;
+    }
+  };
+
+  const mapping = async ({ data, fromDestName, cell }) => {
+    const dataIndex = fromDestName.indexOf(cell.name);
+
+    if (dataIndex !== -1 && cell.type === "reference") {
+      const updatedFormData = { ...formData };
+      for (const item of data) {
+        updatedFormData[item.destName] = {
+          label: item.destLabel,
+          value: item.destValue,
+        };
+      }
+      setFormData(updatedFormData);
+
+      for (const item of data) {
+        await mappingDetailed(item);
+      }
+    }
+  };
+
+  const mappingDetailed = async (item: {
+    destValue: string;
+    destName: string;
+  }) => {
+    if (!item?.destValue) return;
+    const entityFieldMappingManager = await client(
+      "/gw/entity/GetEntityFieldMappingManager",
+      {
+        params: {
+          id: item.destValue,
+          entity,
+          fieldName: item.destName,
+          actionType: "create",
+        },
+      },
+    );
+
+    if (!mobileLayout?.hasDetail) return;
+
+    const newDetailInfoAreas = [...mobileLayout?.hasDetail.detailInfoAreas];
+
+    for (const k of entityFieldMappingManager.data) {
+      if (k.details) {
+        const flatData = k.details.flat();
+        for (const item of flatData) {
+          newDetailInfoAreas.push(item);
+        }
+        // mappingDetailed(deta);
+      }
     }
   };
 

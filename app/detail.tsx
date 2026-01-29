@@ -97,7 +97,6 @@ export default function DetailScreen() {
       const { ReadMenu } = data;
       const updateMenu = [...initialMenu, ...ReadMenu];
       setActiveId("detail");
-
       setMenu(updateMenu);
     }
   }, [data]);
@@ -106,9 +105,7 @@ export default function DetailScreen() {
     const referenceFieldName = menu?.find(
       (k) => k.menuName === activeId,
     )?.referenceFieldName;
-    const entity = menu?.find(
-      (k) => k.menuName === activeId,
-    )?.menuName
+    const entity = menu?.find((k) => k.menuName === activeId)?.menuName;
     router.navigate({
       pathname: "/modal",
       params: {

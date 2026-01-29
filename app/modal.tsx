@@ -3,7 +3,7 @@ import { FormItem } from "@/components/ui/FormItem";
 import { userNameField } from "@/constants";
 import { useMobileLayoutV2 } from "@/service/universal";
 import { useAuth } from "@/store";
-import { Cell } from "@/types/mobile-layout";
+import { Area, Cell } from "@/types/mobile-layout";
 import { handleLayout, LayoutData, shouldMapReferenceField } from "@/utils";
 import { Maybe } from "@/utils/functor";
 import { useHttp } from "@/utils/http";
@@ -201,17 +201,35 @@ export default function ModalScreen() {
 
     if (!mobileLayout?.hasDetail) return;
 
-    const newDetailInfoAreas = [...mobileLayout?.hasDetail.detailInfoAreas];
+    const initialRowBase = JSON.parse(
+      JSON.stringify(mobileLayout.hasDetail.detailInfoAreas[0]),
+    );
 
-    for (const k of entityFieldMappingManager.data) {
-      if (k.details) {
-        const flatData = k.details.flat();
-        for (const item of flatData) {
-          newDetailInfoAreas.push(item);
+    const newDetailInfoAreas = [];
+
+    for (const element of entityFieldMappingManager.data) {
+      for (const detail of element.details) {
+        const currentRowGroup = JSON.parse(JSON.stringify(initialRowBase));
+
+        for (const [index, det] of detail.entries()) {
+          if (currentRowGroup.rows[index]) {
+            currentRowGroup.rows[index].defaultValue = det.destLabel;
+            currentRowGroup.rows[index].value = det.destValue;
+          }
         }
-        // mappingDetailed(deta);
+
+        newDetailInfoAreas.push(currentRowGroup);
       }
     }
+
+    setMobileLayout({
+      ...mobileLayout,
+      hasDetail: {
+        ...mobileLayout.hasDetail,
+        detailInfoAreas: newDetailInfoAreas,
+      },
+    });
+    console.log("最终生成的各行数据：", newDetailInfoAreas);
   };
 
   const trigger_express = async (targetField: string) => {
@@ -335,7 +353,7 @@ export default function ModalScreen() {
                 <Card key={item.id + index} background={"#ffffff"}>
                   <XStack p="$2">
                     <Label size="$5" fontWeight={600}>
-                      明细{index}
+                      明细{index + 1}
                     </Label>
                   </XStack>
 
